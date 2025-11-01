@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -24,7 +25,17 @@ function App() {
     stop,
   } = useSttSession();
   const [toast, setToast] = useState<string | null>(null);
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const initializedRef = useRef(false);
+
+  const handleStart = useCallback(async () => {
+    try {
+      await start(activeRoomId ?? undefined);
+    } catch (startError) {
+      const message = startError instanceof Error ? startError.message : '녹음을 시작할 수 없습니다.';
+      setToast(message);
+    }
+  }, [activeRoomId, start]);
 
   useEffect(() => {
     if (!initializedRef.current) {
@@ -62,7 +73,7 @@ function App() {
             <RecorderControls
               state={state}
               error={error}
-              onStart={start}
+              onStart={handleStart}
               onStop={stop}
             />
             <TranscriptDisplay
@@ -98,7 +109,7 @@ function App() {
             ) : null}
           </div>
           <div className="column">
-            <RoomsPanel />
+            <RoomsPanel onSelectionChange={setActiveRoomId} />
           </div>
         </section>
 

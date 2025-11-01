@@ -3,7 +3,7 @@ import type { SttSessionState } from '../realtime/useSttSession';
 interface RecorderControlsProps {
   state: SttSessionState;
   error: string | null;
-  onStart: () => void;
+  onStart: () => void | Promise<void>;
   onStop: () => void;
 }
 

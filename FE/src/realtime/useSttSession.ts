@@ -35,7 +35,7 @@ export interface UseSttSessionResult {
   bubbles: SttBubble[];
   qaPairs: SttQaPair[];
   stats: SttStatsPayload | null;
-  start: () => Promise<void>;
+  start: (roomId?: string) => Promise<void>;
   stop: () => void;
 }
 
@@ -264,9 +264,14 @@ export function useSttSession(): UseSttSessionResult {
     }
   }, [handleStats]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (roomId?: string) => {
     if (isActiveRef.current) {
       return;
+    }
+
+    if (!roomId) {
+      setError('방을 먼저 선택해주세요.');
+      throw new Error('방을 먼저 선택해주세요.');
     }
 
     isActiveRef.current = true;
@@ -313,6 +318,7 @@ export function useSttSession(): UseSttSessionResult {
           diarization: true,
           minSpeakers: 2,
           maxSpeakers: 4,
+          roomId,
         },
       });
     } catch (startError) {

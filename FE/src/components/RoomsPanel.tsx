@@ -16,6 +16,10 @@ import type { Room, RoomPhoto } from '../types/domain';
 import { resolveApiUrl } from '../utils/url';
 import { AudioPlayer } from './AudioPlayer';
 
+interface RoomsPanelProps {
+  onSelectionChange?: (roomId: string | null) => void;
+}
+
 interface RoomFormState {
   title: string;
   category: string;
@@ -42,7 +46,7 @@ function toAbsoluteUrl(url: string): string {
   return resolveApiUrl(url);
 }
 
-export function RoomsPanel() {
+export function RoomsPanel({ onSelectionChange }: RoomsPanelProps = {}) {
   const [form, setForm] = useState<RoomFormState>(initialForm);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -94,6 +98,10 @@ export function RoomsPanel() {
       setSelectedRoom(null);
     }
   }, [selectedRoomId, loadRoomDetail]);
+
+  useEffect(() => {
+    onSelectionChange?.(selectedRoomId);
+  }, [selectedRoomId, onSelectionChange]);
 
   useEffect(() => {
     if (!toast) {

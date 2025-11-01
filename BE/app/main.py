@@ -100,6 +100,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                     session = await session_manager.create_session(websocket)
                     session_id = session.session_id
                     logger.info("Created STT session %s", session_id)
+                session.configure(data)
                 await websocket.send_json(
                     {
                         "event": "session.ready",

@@ -13,9 +13,11 @@ from google.auth.exceptions import DefaultCredentialsError
 from google.oauth2 import service_account
 
 from app.core.config import Settings
+from app.models import QAPair, TranscriptSegment
 from app.sessions import events
 from app.sessions.diarization import Segment
 from app.sessions.qa_extractor import QAExtractor
+from app.use_cases import get_stt_use_case
 
 if TYPE_CHECKING:
     from app.sessions.audio_pipeline import AudioPipeline
@@ -48,8 +50,12 @@ class Transcriber:
         self._started_at: float = 0.0
 
         self._qa_extractor = QAExtractor(settings)
-        self._qa_pairs: list[dict] = []
+        self._qa_pairs: list[QAPair] = []
+        self._qa_pair_keys: set[str] = set()
+        self._transcript_segments: list[TranscriptSegment] = []
+        self._segment_keys: set[str] = set()
         self._last_final_transcript: str = ""
+        self._room_id: Optional[str] = None
 
     async def start(self) -> None:
         if self._task is not None:
@@ -60,6 +66,9 @@ class Transcriber:
         self._started_at = time.monotonic()
         self._qa_extractor = QAExtractor(self._settings)
         self._qa_pairs = []
+        self._qa_pair_keys = set()
+        self._transcript_segments = []
+        self._segment_keys = set()
         self._last_final_transcript = ""
         self._task = asyncio.create_task(self._run())
         logger.debug("Transcriber started for session %s", self._session_id)
@@ -82,9 +91,18 @@ class Transcriber:
             logger.exception("Transcriber task raised during stop for session %s: %s", self._session_id, exc)
         finally:
             if self._loop:
-                await events.emit_qa_pairs(self._websocket, self._qa_pairs, final=True)
+                await events.emit_qa_pairs(
+                    self._websocket,
+                    [pair.model_dump() for pair in self._qa_pairs],
+                    final=True,
+                )
+            await self._persist_results()
             logger.debug("Transcriber task finished for session %s", self._session_id)
             self._task = None
+
+    def set_room_id(self, room_id: Optional[str]) -> None:
+        if room_id:
+            self._room_id = room_id
 
     async def _run(self) -> None:
         try:
@@ -202,33 +220,26 @@ class Transcriber:
             if not new_text:
                 continue
 
+            segment = self._build_segment(result, new_text)
+            if segment is None:
+                continue
+
             asyncio.run_coroutine_threadsafe(
                 events.emit_final_segments(
                     self._websocket,
-                    [
-                        {
-                            "speaker": None,
-                            "text": new_text,
-                            "start": 0.0,
-                            "end": 0.0,
-                        }
-                    ],
+                    [segment.to_dict()],
                 ),
                 self._loop,
             )
-            segment = Segment(
-                speaker=None,
-                text=new_text,
-                start=0.0,
-                end=0.0,
-            )
-            qa_pairs = self._qa_extractor.append_segments([segment])
-            if qa_pairs:
-                self._qa_pairs.extend(qa_pairs)
+            self._append_transcript_segment(segment)
+
+            qa_payloads = self._qa_extractor.append_segments([segment])
+            new_pairs = self._register_qa_pairs(qa_payloads)
+            if new_pairs:
                 asyncio.run_coroutine_threadsafe(
                     events.emit_qa_pairs(
                         self._websocket,
-                        qa_pairs,
+                        [pair.model_dump() for pair in new_pairs],
                         final=False,
                     ),
                     self._loop,
@@ -261,3 +272,71 @@ class Transcriber:
             diff = transcript[len(self._last_final_transcript):]
             return diff.strip()
         return transcript
+
+    def _build_segment(self, result: StreamingRecognizeResponse, text: str) -> Optional[Segment]:
+        if not result.results:
+            return None
+        candidate = result.results[0]
+        if not candidate.alternatives:
+            return None
+
+        words = list(candidate.alternatives[0].words)
+        if words:
+            start = self._duration_to_seconds(words[0].start_time)
+            end = self._duration_to_seconds(words[-1].end_time)
+        else:
+            start = self._transcript_segments[-1].end if self._transcript_segments else 0.0
+            end = start
+
+        return Segment(speaker=None, text=text, start=start, end=end)
+
+    def _append_transcript_segment(self, segment: Segment) -> None:
+        transcript_segment = TranscriptSegment.from_values(
+            segment.speaker,
+            segment.start,
+            segment.end,
+            segment.text,
+        )
+        if transcript_segment.segment_key in self._segment_keys:
+            return
+        self._segment_keys.add(transcript_segment.segment_key)
+        self._transcript_segments.append(transcript_segment)
+
+    def _register_qa_pairs(self, pairs: Iterable[dict]) -> list[QAPair]:
+        new_pairs: list[QAPair] = []
+        for payload in pairs or []:
+            key = f"{payload.get('q_text')}|{payload.get('a_text')}|{payload.get('a_time')}"
+            if key in self._qa_pair_keys:
+                continue
+            self._qa_pair_keys.add(key)
+            pair = QAPair.model_validate(payload)
+            self._qa_pairs.append(pair)
+            new_pairs.append(pair)
+        return new_pairs
+
+    async def _persist_results(self) -> None:
+        if not self._room_id:
+            return
+        if not self._qa_pairs and not self._transcript_segments:
+            return
+
+        try:
+            use_case = get_stt_use_case()
+            await use_case.persist_session_result(self._room_id, self._qa_pairs, self._transcript_segments)
+        except Exception as exc:  # pragma: no cover - diagnostics
+            logger.exception(
+                "Failed to persist STT results for session %s (room=%s): %s",
+                self._session_id,
+                self._room_id,
+                exc,
+            )
+
+    @staticmethod
+    def _duration_to_seconds(duration) -> float:
+        if duration is None:
+            return 0.0
+        if hasattr(duration, "total_seconds"):
+            return float(duration.total_seconds())
+        seconds = getattr(duration, "seconds", 0.0)
+        nanos = getattr(duration, "nanos", 0)
+        return float(seconds) + float(nanos) / 1_000_000_000

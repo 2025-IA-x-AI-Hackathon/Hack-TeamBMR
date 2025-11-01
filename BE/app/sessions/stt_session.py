@@ -53,6 +53,7 @@ class STTSession:
             audio_pipeline=self._audio_pipeline,
         )
         self._transcriber_started = False
+        self._room_id: Optional[str] = None
 
         ice_servers: list[RTCIceServer] = []
         for entry in settings.ice_servers:
@@ -171,6 +172,12 @@ class STTSession:
 
     def get_audio_queue(self) -> asyncio.Queue[Optional[bytes]]:
         return self._audio_queue
+
+    def configure(self, payload: Dict[str, Any]) -> None:
+        room_id = payload.get("roomId") or payload.get("room_id")
+        if room_id:
+            self._room_id = str(room_id)
+            self._transcriber.set_room_id(self._room_id)
 
     def _on_connection_state_change(self) -> None:
         logger.debug("Session %s connection state: %s", self.session_id, self._pc.connectionState)
