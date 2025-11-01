@@ -11,9 +11,6 @@ from av.audio.resampler import AudioResampler
 from app.core.config import Settings
 from app.noise.ffmpeg_reducer import FFmpegNoiseReducer
 from app.util.analysis_writer import AnalysisWriter
-from app.util.debug_log import append_debug_log
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +32,11 @@ class AudioPipeline:
             layout="mono",
             rate=settings.stt_sample_rate,
         )
-        self._noise_reducer = FFmpegNoiseReducer(sample_rate=settings.stt_sample_rate)
+        try:
+            self._noise_reducer = FFmpegNoiseReducer(sample_rate=settings.stt_sample_rate)
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.warning("Noise reducer initialization failed: %s", exc)
+            self._noise_reducer = None
 
         self._logs_dir = settings.logs_dir
         self._recording_path = Path(settings.storage_dir) / f"{session_id}.wav"
@@ -61,7 +62,7 @@ class AudioPipeline:
     async def handle_frame(self, frame: av.AudioFrame) -> None:
         pcm_chunks = self._to_pcm_bytes(frame)
         for chunk in pcm_chunks:
-            reduced = self._noise_reducer.process(chunk)
+            reduced = self._apply_noise_reduction(chunk)
             await self._push_chunk(reduced)
             if self._recording_writer:
                 self._recording_writer.append(reduced)
@@ -82,21 +83,30 @@ class AudioPipeline:
                     result.append(channel_data.tobytes())
         return result
 
+    def _apply_noise_reduction(self, chunk: bytes) -> bytes:
+        if not self._noise_reducer:
+            return chunk
+        return self._noise_reducer.process(chunk)
+
     async def _push_chunk(self, chunk: bytes) -> None:
         try:
             self._output_queue.put_nowait(chunk)
             self._bytes_sent += len(chunk)
             self._chunks_sent += 1
             if self._chunks_sent <= 5 or self._chunks_sent % 20 == 0:
-                append_debug_log(
-                    self._logs_dir,
-                    f"[{self._session_id}] audio chunk queued size={len(chunk)} total_bytes={self._bytes_sent} chunks={self._chunks_sent}",
+                logger.debug(
+                    "Session %s queued audio chunk size=%d total_bytes=%d chunks=%d",
+                    self._session_id,
+                    len(chunk),
+                    self._bytes_sent,
+                    self._chunks_sent,
                 )
         except asyncio.QueueFull:
             logger.debug("Audio queue full. Dropping chunk.")
 
     def close(self) -> None:
-        self._noise_reducer.close()
+        if self._noise_reducer:
+            self._noise_reducer.close()
         if self._recording_writer:
             self._recording_writer.close()
         if self._analysis_writer and self._analysis_writer is not self._recording_writer:
