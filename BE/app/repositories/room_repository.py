@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import List, Optional
 
 from motor.motor_asyncio import AsyncIOMotorClientSession, AsyncIOMotorCollection
@@ -23,31 +24,32 @@ class RoomRepository:
         document["_id"] = document["room_id"]
         await self._collection.insert_one(document, session=session)
 
-    async def get_room(self, room_id: str) -> Optional[RoomBase]:
-        document = await self._collection.find_one({"_id": room_id})
+    async def get_room(self, user_id: str, room_id: str) -> Optional[RoomBase]:
+        document = await self._collection.find_one({"_id": room_id, "user_id": user_id})
         return self._deserialize(document)
 
-    async def list_rooms(self, skip: int, limit: int) -> List[RoomBase]:
-        cursor = (
-            self._collection.find()
-            .skip(skip)
-            .limit(limit)
-            .sort("room_id", 1)
-        )
-        documents = await cursor.to_list(length=limit)
-        return [room for doc in documents if (room := self._deserialize(doc))]
+    async def list_rooms(self, user_id: str) -> List[RoomBase]:
+        cursor = self._collection.find({"user_id": user_id}).sort("created_at", -1)
+        rooms: List[RoomBase] = []
+        async for document in cursor:
+            room = self._deserialize(document)
+            if room:
+                rooms.append(room)
+        return rooms
 
     async def delete_room(
         self,
+        user_id: str,
         room_id: str,
         *,
         session: Optional[AsyncIOMotorClientSession] = None,
     ) -> bool:
-        result = await self._collection.delete_one({"_id": room_id}, session=session)
+        result = await self._collection.delete_one({"_id": room_id, "user_id": user_id}, session=session)
         return result.deleted_count == 1
 
     async def update_photo(
         self,
+        user_id: str,
         room_id: str,
         photo_id: str,
         object_key: str,
@@ -55,7 +57,7 @@ class RoomRepository:
         session: Optional[AsyncIOMotorClientSession] = None,
     ) -> bool:
         result = await self._collection.update_one(
-            {"_id": room_id},
+            {"_id": room_id, "user_id": user_id},
             {
                 "$set": {
                     "photo_id": photo_id,
@@ -72,9 +74,12 @@ class RoomRepository:
 
         data = dict(document)
         data.setdefault("room_id", data.pop("_id", None))
+        data.setdefault("user_id", data.get("user_id"))
         data.setdefault("photo_id", data.get("photo_id"))
         if "photo_key" not in data:
             data["photo_key"] = None
+        if "created_at" not in data:
+            data["created_at"] = datetime.utcnow()
 
         # Ensure nested checklist structure always materialises as expected by RoomBase.
         if "checklist" not in data or not data["checklist"]:
