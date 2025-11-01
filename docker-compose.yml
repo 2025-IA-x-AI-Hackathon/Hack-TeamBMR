@@ -1,6 +1,6 @@
 services:
   backend:
-    build: ./backend
+    build: ./BE
     ports:
       - '8080:8080'
     env_file:
@@ -8,7 +8,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
+    build: ./FE
     ports:
       - '3000:3000'
     env_file:
