@@ -172,7 +172,6 @@ export function useSttSession(): UseSttSessionResult {
 
     try {
       if (!payload.candidate) {
-        await pcRef.current.addIceCandidate(null);
         return;
       }
 
