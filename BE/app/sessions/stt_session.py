@@ -20,9 +20,6 @@ from app.core.config import Settings
 from app.sessions.audio_pipeline import AudioPipeline
 from app.sessions import events
 from app.sessions.transcriber import Transcriber
-from app.util.debug_log import append_debug_log
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -80,7 +77,6 @@ class STTSession:
         self._pc.on("icecandidate")(self._on_icecandidate)
 
     async def handle_offer(self, offer: Dict[str, Any]) -> Dict[str, Any]:
-        append_debug_log(self._logs_dir, f"[{self.session_id}] handle_offer invoked")
         logger.debug("Session %s handling offer", self.session_id)
         if "sdp" not in offer or "type" not in offer:
             raise ValueError("Invalid offer payload")
@@ -122,10 +118,6 @@ class STTSession:
             sdpMid=payload.get("sdpMid"),
             sdpMLineIndex=payload.get("sdpMLineIndex"),
         )
-        append_debug_log(
-            self._logs_dir,
-            f"[{self.session_id}] add_remote_candidate mid={rtc_candidate.sdpMid} line={rtc_candidate.sdpMLineIndex} {candidate_sdp}",
-        )
         logger.debug(
             "Session %s applying remote ICE candidate (mid=%s mline=%s): %s",
             self.session_id,
@@ -133,15 +125,10 @@ class STTSession:
             rtc_candidate.sdpMLineIndex,
             candidate_sdp,
         )
-        append_debug_log(
-            self._logs_dir,
-            f"[{self.session_id}] before addIceCandidate mid={rtc_candidate.sdpMid} line={rtc_candidate.sdpMLineIndex}",
-        )
         try:
             await self._pc.addIceCandidate(rtc_candidate)
         except Exception as exc:  # pragma: no cover - diagnostics
             logger.warning("Session %s failed to add ICE candidate: %s", self.session_id, exc)
-            append_debug_log(self._logs_dir, f"[{self.session_id}] addIceCandidate failed: {exc}")
             raise
 
     async def stop(self) -> None:
@@ -150,7 +137,6 @@ class STTSession:
             return
 
         self._closed.set()
-        append_debug_log(self._logs_dir, f"[{self.session_id}] stop invoked")
         logger.info("Stopping STT session %s", self.session_id)
 
         for task in list(self._tasks):
@@ -192,14 +178,12 @@ class STTSession:
             asyncio.create_task(self.stop())
         if self._pc.connectionState == "failed":
             logger.error("Session %s peer connection failed", self.session_id)
-            append_debug_log(self._logs_dir, f"[{self.session_id}] peer connection failed")
 
     def _on_track(self, track: MediaStreamTrack) -> None:
         if track.kind != "audio":
             logger.debug("Ignoring non-audio track: %s", track.kind)
             return
 
-        append_debug_log(self._logs_dir, f"[{self.session_id}] audio track received kind={track.kind}")
         logger.info("Audio track received for session %s", self.session_id)
         relayed = self._relay.subscribe(track)
         task = asyncio.create_task(self._consume_audio(relayed))
@@ -212,14 +196,13 @@ class STTSession:
             while not self._closed.is_set():
                 frame = await track.recv()
                 frame_index += 1
-                append_debug_log(self._logs_dir, f"[{self.session_id}] received frame #{frame_index} from track")
+                logger.debug("Session %s received frame #%d from track", self.session_id, frame_index)
                 await self._ensure_transcriber_started()
                 await self._audio_pipeline.handle_frame(frame)
         except asyncio.CancelledError:
             pass
         except Exception as exc:  # pragma: no cover - defensive
             logger.warning("Audio consumption failed for session %s: %s", self.session_id, exc)
-            append_debug_log(self._logs_dir, f"[{self.session_id}] audio consumption failed: {exc}")
         finally:
             try:
                 self._audio_queue.put_nowait(None)
@@ -242,5 +225,4 @@ class STTSession:
             }
 
         logger.debug("Session %s emitting local ICE candidate", self.session_id)
-        append_debug_log(self._logs_dir, f"[{self.session_id}] emitting local candidate {payload}")
         await events.emit_rtc_candidate(self.websocket, payload)
