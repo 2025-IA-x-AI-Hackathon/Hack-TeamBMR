@@ -49,6 +49,7 @@ export function useSttSession(): UseSttSessionResult {
   const client = useMemo(() => getRealtimeClient(), []);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
+  const audioSenderRef = useRef<RTCRtpSender | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const micCleanupRef = useRef<(() => void) | null>(null);
   const sessionIdRef = useRef<string | null>(null);
@@ -71,6 +72,13 @@ export function useSttSession(): UseSttSessionResult {
       pcRef.current.ondatachannel = null;
       pcRef.current.close();
       pcRef.current = null;
+    }
+
+    if (audioSenderRef.current) {
+      audioSenderRef.current.replaceTrack(null).catch(() => {
+        // Ignore replace errors during teardown
+      });
+      audioSenderRef.current = null;
     }
 
     stopStream(streamRef.current);
@@ -249,9 +257,14 @@ export function useSttSession(): UseSttSessionResult {
       pcRef.current = pc;
       dataChannelRef.current = dataChannel;
 
-      micResult.stream.getAudioTracks().forEach((track) => {
-        pc.addTrack(track, micResult.stream);
-      });
+      const [audioTrack] = micResult.stream.getAudioTracks();
+      if (!audioTrack) {
+        throw new Error('사용 가능한 오디오 트랙을 찾지 못했습니다.');
+      }
+
+      audioTrack.enabled = true;
+      const sender = pc.addTrack(audioTrack, micResult.stream);
+      audioSenderRef.current = sender;
 
       client.send({
         event: 'session.init',
