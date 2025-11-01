@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional
 from uuid import uuid4
 
 from fastapi import WebSocket

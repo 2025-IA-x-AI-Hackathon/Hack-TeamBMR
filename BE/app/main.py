@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, Optional
+from typing import Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
@@ -101,6 +101,16 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                             "data": {
                                 "code": "NOT_IMPLEMENTED",
                                 "message": "WebRTC offer 처리가 아직 구현되지 않았습니다.",
+                            },
+                        },
+                    )
+                except ValueError as exc:
+                    await websocket.send_json(
+                        {
+                            "event": "stt.error",
+                            "data": {
+                                "code": "INVALID_OFFER",
+                                "message": str(exc),
                             },
                         },
                     )
