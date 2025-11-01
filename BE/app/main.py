@@ -9,6 +9,7 @@ from starlette.responses import JSONResponse
 from starlette.staticfiles import StaticFiles
 
 from app.core.config import get_settings
+from app.sessions import events
 from app.sessions.manager import SessionManager
 from app.sessions.stt_session import STTSession
 
@@ -141,6 +142,7 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                 if session_id:
                     logger.info("Session %s closed by client", session_id)
                     await session_manager.remove(session_id)
+                    await events.emit_session_close(websocket, data.get("reason", "client request"))
                     session = None
                     session_id = None
             elif event == "rtc.stop":
@@ -170,8 +172,8 @@ async def websocket_endpoint(websocket: WebSocket) -> None:
                         },
                     },
                 )
-    except WebSocketDisconnect:
-        pass
+except WebSocketDisconnect:
+        logger.info("WebSocket disconnected for session %s", session_id)
     finally:
         if session_id:
             await session_manager.remove(session_id)

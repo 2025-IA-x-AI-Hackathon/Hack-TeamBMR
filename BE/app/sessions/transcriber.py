@@ -39,6 +39,7 @@ class Transcriber:
         self._stop_event = asyncio.Event()
         self._partial_text: str = ""
         self._final_count = 0
+        self._partial_count = 0
         self._started_at: float = 0.0
 
         self._diarizer = DiarizationProcessor(settings.logs_dir)
@@ -46,14 +47,17 @@ class Transcriber:
 
     async def start(self) -> None:
         if self._task is not None:
+            logger.debug("Transcriber already running for session %s", self._session_id)
             return
         self._loop = asyncio.get_running_loop()
         self._stop_event.clear()
         self._started_at = time.monotonic()
         self._task = asyncio.create_task(self._run())
+        logger.debug("Transcriber started for session %s", self._session_id)
 
     async def stop(self) -> None:
         if self._task is None:
+            logger.debug("Transcriber stop called but task missing for session %s", self._session_id)
             return
 
         self._stop_event.set()
@@ -62,18 +66,20 @@ class Transcriber:
         except asyncio.QueueFull:
             pass
 
+        logger.debug("Awaiting transcriber task shutdown for session %s", self._session_id)
         await self._task
+        logger.debug("Transcriber task finished for session %s", self._session_id)
         self._task = None
 
     async def _run(self) -> None:
         try:
             await asyncio.to_thread(self._streaming_recognize)
         except DefaultCredentialsError as exc:
-            logger.error("Google credentials not configured: %s", exc)
+            logger.error("Google credentials not configured for session %s: %s", self._session_id, exc)
             if self._loop:
                 await events.emit_error(self._websocket, "GOOGLE_AUTH_MISSING", str(exc))
         except Exception as exc:  # pragma: no cover - fallback reporting
-            logger.exception("Transcriber run failed: %s", exc)
+            logger.exception("Transcriber run failed for session %s: %s", self._session_id, exc)
             if self._loop:
                 await events.emit_error(self._websocket, "UPSTREAM_FAIL", str(exc))
 
@@ -153,6 +159,7 @@ class Transcriber:
             if not result.is_final:
                 if transcript != self._partial_text:
                     self._partial_text = transcript
+                    self._partial_count += 1
                     asyncio.run_coroutine_threadsafe(
                         events.emit_partial(self._websocket, transcript),
                         self._loop,
@@ -192,3 +199,15 @@ class Transcriber:
                 )
 
             self._final_count += 1
+
+            if self._loop:
+                asyncio.run_coroutine_threadsafe(
+                    events.emit_stats(
+                        self._websocket,
+                        {
+                            "partials": self._partial_count,
+                            "finals": self._final_count,
+                        },
+                    ),
+                    self._loop,
+                )

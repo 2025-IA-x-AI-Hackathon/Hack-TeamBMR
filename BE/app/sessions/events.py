@@ -45,5 +45,13 @@ async def emit_recording_url(websocket: WebSocket, url: str) -> None:
     await emit(websocket, "stt.recording_url", {"url": url})
 
 
-async def emit_webrtc_ice(websocket: WebSocket, payload: Mapping[str, Any]) -> None:
-    await emit(websocket, "stt.webrtc.ice", payload)
+async def emit_rtc_candidate(websocket: WebSocket, payload: Mapping[str, Any]) -> None:
+    await emit(websocket, "rtc.candidate", payload)
+
+
+async def emit_session_close(websocket: WebSocket, reason: str) -> None:
+    await emit(websocket, "session.close", {"reason": reason})
+
+
+async def emit_stats(websocket: WebSocket, stats: Mapping[str, Any]) -> None:
+    await emit(websocket, "stt.stats", stats)

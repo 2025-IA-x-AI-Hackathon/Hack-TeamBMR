@@ -132,9 +132,11 @@ class STTSession:
 
     async def stop(self) -> None:
         if self._closed.is_set():
+            logger.debug("Session %s stop() called but already closed", self.session_id)
             return
 
         self._closed.set()
+        logger.info("Stopping STT session %s", self.session_id)
 
         for task in list(self._tasks):
             task.cancel()
@@ -142,9 +144,20 @@ class STTSession:
         if self._tasks:
             await asyncio.gather(*self._tasks, return_exceptions=True)
 
-        await self._transcriber.stop()
-        self._audio_pipeline.close()
-        await self._pc.close()
+        try:
+            await self._transcriber.stop()
+        except Exception as exc:  # pragma: no cover - diagnostics
+            logger.exception("Session %s transcriber stop failed: %s", self.session_id, exc)
+
+        try:
+            self._audio_pipeline.close()
+        except Exception as exc:  # pragma: no cover - diagnostics
+            logger.exception("Session %s audio pipeline close failed: %s", self.session_id, exc)
+
+        try:
+            await self._pc.close()
+        except Exception as exc:  # pragma: no cover - diagnostics
+            logger.exception("Session %s peer connection close failed: %s", self.session_id, exc)
 
         # Drain audio queue to unblock consumer
         while not self._audio_queue.empty():
@@ -159,6 +172,8 @@ class STTSession:
                 self.websocket,
                 f"/recordings/{recording_path.name}",
             )
+
+        await events.emit_session_close(self.websocket, "session stopped")
 
     def get_audio_queue(self) -> asyncio.Queue[Optional[bytes]]:
         return self._audio_queue
@@ -212,4 +227,4 @@ class STTSession:
             }
 
         logger.debug("Session %s emitting local ICE candidate", self.session_id)
-        await events.emit_webrtc_ice(self.websocket, payload)
+        await events.emit_rtc_candidate(self.websocket, payload)
