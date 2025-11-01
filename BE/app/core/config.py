@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     AWS_PRESIGN_EXPIRES: int = 3600
     FRONTEND_URL: str = "http://localhost:3000"
     DEBUG: str
+    SECRET_KEY: str
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRES: int = 3600
 
     class Config:
         env_file = ".env"

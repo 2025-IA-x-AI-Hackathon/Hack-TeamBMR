@@ -1,20 +1,18 @@
 from .checklist import (
-    ChecklistCategory,
-    ChecklistItem,
-    ChecklistListResponse,
-    ChecklistTemplate,
-    DEFAULT_CHECKLIST_TEMPLATE,
+    ChecklistResponse,
+    DEFAULT_CHECKLIST_ITEMS,
+    build_default_checklist_items,
 )
+from .auth import AuthResponse
 from .llm import LLMReportAck, LLMReportDetail, LLMReportTriggerPayload
 from .ocr import OcrBase, OcrDetailResponse, OcrListResponse, OcrUploadResponse
 from .room import RoomBase, RoomChecklist, RoomDetailResponse, RoomPhoto
 
 __all__ = [
-    "ChecklistCategory",
-    "ChecklistItem",
-    "ChecklistListResponse",
-    "ChecklistTemplate",
-    "DEFAULT_CHECKLIST_TEMPLATE",
+    "ChecklistResponse",
+    "DEFAULT_CHECKLIST_ITEMS",
+    "build_default_checklist_items",
+    "AuthResponse",
     "LLMReportAck",
     "LLMReportDetail",
     "LLMReportTriggerPayload",
