@@ -19,15 +19,16 @@ class OcrService:
         self,
         user_id: str,
         # report_id: Optional[str],
+        room_id: str,
         filename: str,
-        # file_type: Optional[str],
+        file_type: Optional[str],
         content: bytes,
         content_type: Optional[str],
     ) -> OcrUploadResponse:
         # safe_report_id = report_id or "unassigned"
         # safe_file_type = file_type or "generic"
         file_stem = Path(filename).stem or f"upload-{uuid4().hex[:8]}"
-        ocr_id = f"{file_stem}"
+        ocr_id = file_stem
         object_key = f"ocr/{user_id}/{filename}"
 
         await self._storage.upload_bytes(
@@ -39,7 +40,7 @@ class OcrService:
         record = OcrBase(
             ocr_id=ocr_id,
             user_id=user_id,
-            report_id=None,
+            room_id=room_id,
             status="done",
             detail=await ocr_usecase.process(object_key),  # 추후 합치면 제공될 예정!
             object_key=object_key,
@@ -51,8 +52,8 @@ class OcrService:
         url = await self._storage.generate_presigned_url(object_key)
         return OcrUploadResponse(ocr_id=ocr_id, status=record.status, object_url=url)
 
-    async def list_results(self, user_id: str, report_id: str) -> Tuple[List[OcrDetailResponse], bool]:
-        records = await self._repository.list_by_report(user_id, report_id)
+    async def list_results(self, user_id: str, room_id: str) -> Tuple[List[OcrDetailResponse], bool]:
+        records = await self._repository.list_by_room(user_id, room_id)
         if not records:
             return [], True
 
@@ -69,7 +70,7 @@ class OcrService:
                 OcrDetailResponse(
                     ocr_id=record.ocr_id or "",
                     user_id=record.user_id,
-                    report_id=record.report_id,
+                    room_id=record.room_id,
                     status=record.status,
                     created_at=record.created_at,
                     detail=record.detail,
@@ -79,8 +80,8 @@ class OcrService:
 
         return responses, pending
 
-    async def list_details(self, user_id: str, report_id: str) -> List[Dict[str, Any]]:
-        records = await self._repository.list_by_report(user_id, report_id)
+    async def list_details(self, user_id: str, room_id: str) -> List[Dict[str, Any]]:
+        records = await self._repository.list_by_room(user_id, room_id)
         return [record.detail for record in records]
 
 

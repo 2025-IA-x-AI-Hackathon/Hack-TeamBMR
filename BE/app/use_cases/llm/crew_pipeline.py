@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 from typing import Any, Dict, List, Sequence
 
 import yaml
@@ -84,7 +85,7 @@ def run_real_estate_agent(stt_details: List[Dict[str, Any]], ocr_details: List[D
     segments = _collect_segments(stt_details)
     contract = _collect_contract(ocr_details)
 
-    config = _load_config("crew_config.yml")
+    config = _load_config("crew_config.yaml")
     agents = _build_agents(config)
     tasks = _build_tasks(config, agents)
 
@@ -139,11 +140,14 @@ def run_real_estate_agent(stt_details: List[Dict[str, Any]], ocr_details: List[D
 
 # ---- 설정 로딩/구성 ----
 def _load_config(path: str) -> Dict[str, Any]:
-    with open(path, "r", encoding="utf-8") as f:
+    config_path = Path(path)
+    if not config_path.is_absolute():
+        config_path = Path(__file__).resolve().parent / config_path
+    with config_path.open("r", encoding="utf-8") as f:
         data = yaml.safe_load(f)
     crews = data.get("crews", [])
     if not crews:
-        raise ValueError("crew_config.yml 에 crews 항목이 비어 있습니다.")
+        raise ValueError("crew_config.yaml 에 crews 항목이 비어 있습니다.")
     return crews[0]
 
 
@@ -159,7 +163,7 @@ def _build_agents(config: Dict[str, Any]) -> Dict[str, Agent]:
             config=a.get("config", {}),
         )
     if not agents:
-        raise ValueError("crew_config.yml 에 정의된 agent 가 없습니다.")
+        raise ValueError("crew_config.yaml 에 정의된 agent 가 없습니다.")
     return agents
 
 
@@ -175,5 +179,5 @@ def _build_tasks(config: Dict[str, Any], agents: Dict[str, Agent]) -> List[Task]
             expected_output="JSON 결과만 반환",
         ))
     if not tasks:
-        raise ValueError("crew_config.yml 에 정의된 task 가 없습니다.")
+        raise ValueError("crew_config.yaml 에 정의된 task 가 없습니다.")
     return tasks

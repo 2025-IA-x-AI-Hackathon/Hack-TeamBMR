@@ -12,7 +12,7 @@ class OcrBase(BaseModel):
         description="Primary identifier for the OCR record. Generated if omitted.",
     )
     user_id: str = Field(..., description="Owner of the OCR job.")
-    report_id: Optional[str] = Field(
+    room_id: Optional[str] = Field(
         default=None,
         description="Associated report identifier, if any.",
     )
@@ -36,7 +36,7 @@ class OcrDetailResponse(BaseModel):
 
     ocr_id: str = Field(..., description="Primary identifier for the OCR record.")
     user_id: str = Field(..., description="Owner of the OCR job.")
-    report_id: Optional[str] = Field(
+    room_id: Optional[str] = Field(
         default=None,
         description="Associated report identifier, if any.",
     )
