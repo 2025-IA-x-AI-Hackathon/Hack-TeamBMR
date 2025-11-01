@@ -57,6 +57,7 @@ class STTSession:
         self._pc = RTCPeerConnection(configuration=configuration)
         self._pc.on("connectionstatechange")(self._on_connection_state_change)
         self._pc.on("track")(self._on_track)
+        self._pc.on("icecandidate")(self._on_icecandidate)
 
     async def handle_offer(self, offer: Dict[str, Any]) -> Dict[str, Any]:
         if "sdp" not in offer or "type" not in offer:
@@ -122,6 +123,8 @@ class STTSession:
 
     def _on_connection_state_change(self) -> None:
         logger.debug("Session %s connection state: %s", self.session_id, self._pc.connectionState)
+        if self._pc.connectionState in {"failed", "closed"}:
+            asyncio.create_task(self.stop())
 
     def _on_track(self, track: MediaStreamTrack) -> None:
         if track.kind != "audio":
@@ -154,3 +157,16 @@ class STTSession:
         if not self._transcriber_started:
             await self._transcriber.start()
             self._transcriber_started = True
+
+    async def _on_icecandidate(self, candidate: Optional[RTCIceCandidate]) -> None:
+        if candidate is None:
+            payload: Dict[str, Any] = {"session_id": self.session_id, "candidate": None}
+        else:
+            payload = {
+                "session_id": self.session_id,
+                "candidate": candidate.candidate,
+                "sdpMid": candidate.sdpMid,
+                "sdpMLineIndex": candidate.sdpMLineIndex,
+            }
+
+        await events.emit_webrtc_ice(self.websocket, payload)

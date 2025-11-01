@@ -43,3 +43,7 @@ async def emit_done(websocket: WebSocket, final_count: int, duration_sec: float)
 
 async def emit_recording_url(websocket: WebSocket, url: str) -> None:
     await emit(websocket, "stt.recording_url", {"url": url})
+
+
+async def emit_webrtc_ice(websocket: WebSocket, payload: Mapping[str, Any]) -> None:
+    await emit(websocket, "stt.webrtc.ice", payload)

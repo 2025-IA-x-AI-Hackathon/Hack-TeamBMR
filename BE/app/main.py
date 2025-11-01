@@ -63,7 +63,7 @@ async def _ensure_session(session: Optional[STTSession], websocket: WebSocket) -
     return session
 
 
-@app.websocket("/ws")
+@app.websocket("/v1/stt/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
     await websocket.accept()
     session: Optional[STTSession] = None
