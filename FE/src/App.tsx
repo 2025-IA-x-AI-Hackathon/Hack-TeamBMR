@@ -1,10 +1,12 @@
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
 } from 'react';
 import { RecorderControls } from './components/RecorderControls';
 import { TranscriptDisplay } from './components/TranscriptDisplay';
+import { QaSummaryPanel } from './components/QaSummaryPanel';
 import { RoomsPanel } from './components/RoomsPanel';
 import { ChecklistPanel } from './components/ChecklistPanel';
 import { OcrPanel } from './components/OcrPanel';
@@ -17,12 +19,23 @@ function App() {
     error,
     partial,
     bubbles,
+    qaPairs,
     stats,
     start,
     stop,
   } = useSttSession();
   const [toast, setToast] = useState<string | null>(null);
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const initializedRef = useRef(false);
+
+  const handleStart = useCallback(async () => {
+    try {
+      await start(activeRoomId ?? undefined);
+    } catch (startError) {
+      const message = startError instanceof Error ? startError.message : '녹음을 시작할 수 없습니다.';
+      setToast(message);
+    }
+  }, [activeRoomId, start]);
 
   useEffect(() => {
     if (!initializedRef.current) {
@@ -60,12 +73,16 @@ function App() {
             <RecorderControls
               state={state}
               error={error}
-              onStart={start}
+              onStart={handleStart}
               onStop={stop}
             />
             <TranscriptDisplay
               bubbles={bubbles}
               partial={partial}
+            />
+            <QaSummaryPanel
+              pairs={qaPairs}
+              visible={state === 'idle'}
             />
             {stats ? (
               <div className="panel stats-panel">
@@ -92,7 +109,7 @@ function App() {
             ) : null}
           </div>
           <div className="column">
-            <RoomsPanel />
+            <RoomsPanel onSelectionChange={setActiveRoomId} />
           </div>
         </section>
 

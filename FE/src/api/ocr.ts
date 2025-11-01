@@ -1,17 +1,17 @@
-import { api, ApiResponse } from './http';
-import { OcrReport, OcrUploadResponse } from '../types/domain';
+import { api } from './http';
+import { OcrUploadResponse } from '../types/domain';
 
 export async function uploadOcrImage(file: File): Promise<OcrUploadResponse> {
   const form = new FormData();
   form.append('file', file);
 
-  const { data } = await api<OcrUploadResponse>('/v1/ocr/uploads', {
+  const response = await api('/v1/ocr/uploads', {
     method: 'POST',
     body: form,
   });
-  return data;
+  return response.json() as Promise<OcrUploadResponse>;
 }
 
-export async function fetchOcrReport(reportId: string): Promise<ApiResponse<OcrReport>> {
-  return api<OcrReport>(`/v1/ocr/${encodeURIComponent(reportId)}`);
+export function fetchOcrReport(reportId: string): Promise<Response> {
+  return api(`/v1/ocr/${encodeURIComponent(reportId)}`);
 }

@@ -81,8 +81,9 @@ export function OcrPanel() {
           return;
         }
 
-        if (response.status === 200 && response.data) {
-          const normalized = normalizeOcrReport(response.data);
+        if (response.status === 200) {
+          const payload = await response.json() as OcrReport;
+          const normalized = normalizeOcrReport(payload);
           setReport(normalized);
           setStatus('done');
           setProgressStage('완료');

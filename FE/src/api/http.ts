@@ -4,11 +4,6 @@ export interface ApiOptions extends RequestInit {
   skipAuth?: boolean;
 }
 
-export interface ApiResponse<T> {
-  status: number;
-  data: T;
-}
-
 function normalizeHeaders(headers?: HeadersInit): Headers {
   if (headers instanceof Headers) {
     return headers;
@@ -54,27 +49,23 @@ function shouldAttachJsonHeader(body?: BodyInit | null): boolean {
   return false;
 }
 
-async function parseJsonSafely<T>(response: Response): Promise<T> {
-  const contentType = response.headers.get('content-type');
-  if (!contentType || !contentType.toLowerCase().includes('application/json')) {
-    return undefined as T;
-  }
-
-  const text = await response.text();
-  if (!text) {
-    return undefined as T;
-  }
-
-  try {
-    return JSON.parse(text) as T;
-  } catch (error) {
-    // eslint-disable-next-line no-console
-    console.warn('Failed to parse JSON response', error);
-    throw new Error('서버 응답을 처리하는 중 오류가 발생했습니다.');
-  }
+function extractErrorMessage(defaultMessage: string, response: Response): Promise<string> {
+  return response.clone().text()
+    .then((text) => {
+      if (!text) {
+        return defaultMessage;
+      }
+      try {
+        const parsed = JSON.parse(text) as { message?: string; error?: string };
+        return parsed.message ?? parsed.error ?? defaultMessage;
+      } catch {
+        return text;
+      }
+    })
+    .catch(() => defaultMessage);
 }
 
-export async function api<T>(path: string, options: ApiOptions = {}): Promise<ApiResponse<T>> {
+export async function api(path: string, options: ApiOptions = {}): Promise<Response> {
   const { skipAuth, headers: rawHeaders, body, method, ...rest } = options;
   const headers = normalizeHeaders(rawHeaders);
 
@@ -102,25 +93,11 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<Ap
 
   const response = await fetch(resolveApiUrl(path), fetchOptions);
 
-  if (response.status === 204) {
-    return { status: response.status, data: undefined as T };
-  }
-
   if (!response.ok) {
-    let message = response.statusText || '요청 중 오류가 발생했습니다.';
-    try {
-      const errorJson = await parseJsonSafely<{ message?: string; error?: string }>(response);
-      if (errorJson?.message) {
-        message = errorJson.message;
-      } else if (errorJson?.error) {
-        message = errorJson.error;
-      }
-    } catch {
-      // Already handled in parseJsonSafely
-    }
+    const fallbackMessage = response.statusText || '요청 중 오류가 발생했습니다.';
+    const message = await extractErrorMessage(fallbackMessage, response);
     throw new Error(message);
   }
 
-  const data = await parseJsonSafely<T>(response);
-  return { status: response.status, data };
+  return response;
 }

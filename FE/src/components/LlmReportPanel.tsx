@@ -83,8 +83,9 @@ export function LlmReportPanel() {
           return;
         }
 
-        if (response.status === 200 && response.data) {
-          const normalized = normalizeLlmReport(response.data);
+        if (response.status === 200) {
+          const payload = await response.json() as LlmReport;
+          const normalized = normalizeLlmReport(payload);
           setReport(normalized);
           setStatus('done');
           setProgressStage('완료');

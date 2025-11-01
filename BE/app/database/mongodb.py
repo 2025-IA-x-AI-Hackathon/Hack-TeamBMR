@@ -31,6 +31,21 @@ def get_rooms_collection() -> AsyncIOMotorCollection:
     return get_collection("rooms")
 
 
+def get_ocr_collection() -> AsyncIOMotorCollection:
+    """Convenience accessor for the OCR jobs collection."""
+    return get_collection("ocr_jobs")
+
+
+def get_llm_collection() -> AsyncIOMotorCollection:
+    """Convenience accessor for the LLM reports collection."""
+    return get_collection("llm_reports")
+
+
+def get_stt_collection() -> AsyncIOMotorCollection:
+    """Convenience accessor for the STT results collection."""
+    return get_collection("stt_results")
+
+
 @asynccontextmanager
 async def get_session() -> AsyncGenerator[AsyncIOMotorClientSession, None]:
     """Yield an async MongoDB client session suitable for transactional work."""

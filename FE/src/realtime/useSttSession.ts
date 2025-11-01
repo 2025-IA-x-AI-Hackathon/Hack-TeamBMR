@@ -16,6 +16,8 @@ import {
   type SttErrorPayload,
   type SttFinalSegmentsPayload,
   type SttPartialPayload,
+  type SttQaPair,
+  type SttQaPairsPayload,
   type SttStatsPayload,
 } from './stt.types';
 import {
@@ -31,8 +33,9 @@ export interface UseSttSessionResult {
   error: string | null;
   partial: string;
   bubbles: SttBubble[];
+  qaPairs: SttQaPair[];
   stats: SttStatsPayload | null;
-  start: () => Promise<void>;
+  start: (roomId?: string) => Promise<void>;
   stop: () => void;
 }
 
@@ -49,6 +52,7 @@ export function useSttSession(): UseSttSessionResult {
   const client = useMemo(() => getRealtimeClient(), []);
   const pcRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
+  const audioSenderRef = useRef<RTCRtpSender | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const micCleanupRef = useRef<(() => void) | null>(null);
   const sessionIdRef = useRef<string | null>(null);
@@ -60,6 +64,7 @@ export function useSttSession(): UseSttSessionResult {
   const [partial, setPartial] = useState('');
   const [bubbles, setBubbles] = useState<SttBubble[]>([]);
   const [stats, setStats] = useState<SttStatsPayload | null>(null);
+  const [qaPairs, setQaPairs] = useState<SttQaPair[]>([]);
 
   const cleanupResources = useCallback(() => {
     dataChannelRef.current?.close();
@@ -71,6 +76,13 @@ export function useSttSession(): UseSttSessionResult {
       pcRef.current.ondatachannel = null;
       pcRef.current.close();
       pcRef.current = null;
+    }
+
+    if (audioSenderRef.current) {
+      audioSenderRef.current.replaceTrack(null).catch(() => {
+        // Ignore replace errors during teardown
+      });
+      audioSenderRef.current = null;
     }
 
     stopStream(streamRef.current);
@@ -100,6 +112,7 @@ export function useSttSession(): UseSttSessionResult {
     cleanupResources();
     setPartial('');
     setStats(null);
+    // QA 결과는 녹음이 끝난 뒤까지 유지하도록 초기화하지 않습니다.
     sessionIdRef.current = null;
     setState('idle');
   }, [cleanupResources, client]);
@@ -158,6 +171,10 @@ export function useSttSession(): UseSttSessionResult {
     }
 
     try {
+      if (!payload.candidate) {
+        return;
+      }
+
       const candidate: RTCIceCandidateInit = {
         candidate: payload.candidate,
         sdpMid: payload.sdpMid ?? undefined,
@@ -193,8 +210,16 @@ export function useSttSession(): UseSttSessionResult {
   }, []);
 
   const handleSessionClose = useCallback(() => {
-    stop();
-  }, [stop]);
+    if (!isActiveRef.current) {
+      return;
+    }
+    isActiveRef.current = false;
+    cleanupResources();
+    setPartial('');
+    setStats(null);
+    sessionIdRef.current = null;
+    setState('idle');
+  }, [cleanupResources]);
 
   const handleSttError = useCallback((payload: SttErrorPayload | GenericErrorPayload) => {
     setError(payload.message);
@@ -204,6 +229,28 @@ export function useSttSession(): UseSttSessionResult {
 
   const handleStats = useCallback((payload: SttStatsPayload) => {
     setStats(payload);
+  }, []);
+
+  const handleQaPairs = useCallback((payload: SttQaPairsPayload) => {
+    const incoming = payload.pairs ?? [];
+    if (!incoming.length && !payload.final) {
+      return;
+    }
+
+    setQaPairs((prev) => {
+      const base = payload.final ? incoming : [...prev, ...incoming];
+      const seen = new Set<string>();
+      const unique: SttQaPair[] = [];
+      for (const pair of base) {
+        const key = JSON.stringify([pair.q_text, pair.a_text, pair.a_time]);
+        if (seen.has(key)) {
+          continue;
+        }
+        seen.add(key);
+        unique.push(pair);
+      }
+      return unique;
+    });
   }, []);
 
   const handleDataChannelMessage = useCallback((payload: unknown) => {
@@ -217,9 +264,14 @@ export function useSttSession(): UseSttSessionResult {
     }
   }, [handleStats]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (roomId?: string) => {
     if (isActiveRef.current) {
       return;
+    }
+
+    if (!roomId) {
+      setError('방을 먼저 선택해주세요.');
+      throw new Error('방을 먼저 선택해주세요.');
     }
 
     isActiveRef.current = true;
@@ -227,6 +279,7 @@ export function useSttSession(): UseSttSessionResult {
     setPartial('');
     setBubbles([]);
     setStats(null);
+    setQaPairs([]);
     setState('connecting');
     client.connect();
 
@@ -249,9 +302,14 @@ export function useSttSession(): UseSttSessionResult {
       pcRef.current = pc;
       dataChannelRef.current = dataChannel;
 
-      micResult.stream.getAudioTracks().forEach((track) => {
-        pc.addTrack(track, micResult.stream);
-      });
+      const [audioTrack] = micResult.stream.getAudioTracks();
+      if (!audioTrack) {
+        throw new Error('사용 가능한 오디오 트랙을 찾지 못했습니다.');
+      }
+
+      audioTrack.enabled = true;
+      const sender = pc.addTrack(audioTrack, micResult.stream);
+      audioSenderRef.current = sender;
 
       client.send({
         event: 'session.init',
@@ -260,6 +318,7 @@ export function useSttSession(): UseSttSessionResult {
           diarization: true,
           minSpeakers: 2,
           maxSpeakers: 4,
+          roomId,
         },
       });
     } catch (startError) {
@@ -278,6 +337,7 @@ export function useSttSession(): UseSttSessionResult {
       client.subscribe('rtc.candidate', (payload) => handleRtcCandidate(payload as RtcCandidatePayload)),
       client.subscribe('stt.partial', (payload) => handlePartial(payload as SttPartialPayload)),
       client.subscribe('stt.final_segments', (payload) => handleFinalSegments(payload as SttFinalSegmentsPayload)),
+      client.subscribe('stt.qa_pairs', (payload) => handleQaPairs(payload as SttQaPairsPayload)),
       client.subscribe('stt.error', (payload) => handleSttError(payload as SttErrorPayload)),
       client.subscribe('stt.stats', (payload) => handleStats(payload as SttStatsPayload)),
       client.subscribe('error', (payload) => handleSttError(payload as GenericErrorPayload)),
@@ -296,33 +356,15 @@ export function useSttSession(): UseSttSessionResult {
     handleSessionReady,
     handleStats,
     handleSttError,
+    handleQaPairs,
   ]);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        stop();
-      }
-    };
-
-    const handleBeforeUnload = () => {
-      stop();
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [stop]);
 
   return {
     state,
     error,
     partial,
     bubbles,
+    qaPairs,
     stats,
     start,
     stop,

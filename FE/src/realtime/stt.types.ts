@@ -53,6 +53,21 @@ export interface SttFinalSegmentsPayload {
   segments: SttSegment[];
 }
 
+export interface SttQaPair {
+  q_text: string;
+  q_speaker: number | null;
+  q_time: number;
+  a_text: string;
+  a_speaker: number | null;
+  a_time: number;
+  confidence: number;
+}
+
+export interface SttQaPairsPayload {
+  pairs: SttQaPair[];
+  final?: boolean;
+}
+
 export interface SttErrorPayload {
   code: string;
   message: string;
@@ -101,6 +116,7 @@ export type IncomingRealtimeEvent =
   | WsMessage<'rtc.candidate', RtcCandidatePayload>
   | WsMessage<'stt.partial', SttPartialPayload>
   | WsMessage<'stt.final_segments', SttFinalSegmentsPayload>
+  | WsMessage<'stt.qa_pairs', SttQaPairsPayload>
   | WsMessage<'stt.error', SttErrorPayload>
   | WsMessage<'stt.stats', SttStatsPayload>
   | WsMessage<'ocr.progress', OcrProgressPayload>

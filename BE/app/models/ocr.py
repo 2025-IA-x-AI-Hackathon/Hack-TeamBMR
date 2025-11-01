@@ -11,9 +11,14 @@ class OcrBase(BaseModel):
         default=None,
         description="Primary identifier for the OCR record. Generated if omitted.",
     )
-    report_id: Optional[str] = Field(
+    user_id: str = Field(..., description="Owner of the OCR job.")
+    room_id: Optional[str] = Field(
         default=None,
         description="Associated report identifier, if any.",
+    )
+    file_type: Optional[str] = Field(
+        default=None,
+        description="계약서/등기부등본 등 파일 타입",
     )
     status: str = Field(..., description="Processing status, e.g. queued, processing, done.")
     created_at: datetime = Field(
@@ -34,9 +39,14 @@ class OcrDetailResponse(BaseModel):
     """REST payload combining OCR persistence data with access information."""
 
     ocr_id: str = Field(..., description="Primary identifier for the OCR record.")
-    report_id: Optional[str] = Field(
+    user_id: str = Field(..., description="Owner of the OCR job.")
+    room_id: Optional[str] = Field(
         default=None,
         description="Associated report identifier, if any.",
+    )
+    file_type: Optional[str] = Field(
+        default=None,
+        description="계약서/등기부등본 등 파일 타입",
     )
     status: str = Field(..., description="Processing status, e.g. queued, processing, done.")
     created_at: datetime = Field(..., description="Timestamp when the OCR job was created.")

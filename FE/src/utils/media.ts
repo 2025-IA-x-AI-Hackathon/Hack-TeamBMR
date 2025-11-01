@@ -6,7 +6,7 @@ export interface MicStreamResult {
 const defaultConstraints: MediaStreamConstraints = {
   audio: {
     channelCount: 1,
-    sampleRate: 48_000,
+    sampleRate: 48000,
     sampleSize: 16,
     echoCancellation: true,
     noiseSuppression: true,
