@@ -76,15 +76,16 @@ class STTSession:
             "type": local.type,
         }
 
-    async def add_ice_candidate(self, candidate: Dict[str, Any]) -> None:
-        if not candidate or candidate.get("candidate") in (None, ""):
+    async def add_ice_candidate(self, payload: Dict[str, Any]) -> None:
+        candidate_value = payload.get("candidate")
+        if not payload or candidate_value in (None, ""):
             await self._pc.addIceCandidate(None)
             return
 
         ice_candidate = RTCIceCandidate(
-            sdpMid=candidate.get("sdpMid"),
-            sdpMLineIndex=candidate.get("sdpMLineIndex"),
-            candidate=candidate.get("candidate"),
+            sdpMid=payload.get("sdpMid"),
+            sdpMLineIndex=payload.get("sdpMLineIndex"),
+            candidate=candidate_value,
         )
         await self._pc.addIceCandidate(ice_candidate)
 
