@@ -1,6 +1,8 @@
 from fastapi import FastAPI
-from app.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
+
+from app.api import v1_router
+from app.core.config import settings
 
 
 app = FastAPI(
@@ -29,3 +31,6 @@ app.add_middleware(
 @app.get("/", tags=["health"])
 def health_check():
     return {"msg": "BMR API running!"}
+
+
+app.include_router(v1_router)
