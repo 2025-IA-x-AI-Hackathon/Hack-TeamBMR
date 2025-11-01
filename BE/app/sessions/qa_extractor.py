@@ -8,7 +8,10 @@ from app.core.config import Settings
 from app.sessions.diarization import Segment
 
 
-QUESTION_PATTERN = re.compile(r"(?:\?|요\?|까\?)\s*$")
+QUESTION_PATTERN = re.compile(
+    r"(?:\?|요\??|까\??|나요\??|니|냐|나\??|죠\??|지요\??|습니까\??|습니까요\??|아니야)\s*$",
+    re.IGNORECASE,
+)
 
 
 @dataclass

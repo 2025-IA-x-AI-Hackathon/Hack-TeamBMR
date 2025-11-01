@@ -22,6 +22,17 @@ async def emit_final_segments(websocket: WebSocket, segments: Iterable[Mapping[s
     await emit(websocket, "stt.final_segments", {"segments": list(segments)})
 
 
+async def emit_qa_pairs(websocket: WebSocket, pairs: Iterable[Mapping[str, Any]], final: bool = False) -> None:
+    await emit(
+        websocket,
+        "stt.qa_pairs",
+        {
+            "pairs": list(pairs),
+            "final": final,
+        },
+    )
+
+
 async def emit_error(websocket: WebSocket, code: str, message: str) -> None:
     await emit(websocket, "stt.error", {"code": code, "message": message})
 

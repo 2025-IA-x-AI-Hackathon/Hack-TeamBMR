@@ -14,8 +14,8 @@ from google.oauth2 import service_account
 
 from app.core.config import Settings
 from app.sessions import events
-from app.sessions.diarization import DiarizationProcessor, Segment
-from app.util.debug_log import append_debug_log
+from app.sessions.diarization import Segment
+from app.sessions.qa_extractor import QAExtractor
 
 if TYPE_CHECKING:
     from app.sessions.audio_pipeline import AudioPipeline
@@ -47,7 +47,9 @@ class Transcriber:
         self._partial_count = 0
         self._started_at: float = 0.0
 
-        self._diarizer = DiarizationProcessor(settings.logs_dir)
+        self._qa_extractor = QAExtractor(settings)
+        self._qa_pairs: list[dict] = []
+        self._last_final_transcript: str = ""
 
     async def start(self) -> None:
         if self._task is not None:
@@ -56,9 +58,11 @@ class Transcriber:
         self._loop = asyncio.get_running_loop()
         self._stop_event.clear()
         self._started_at = time.monotonic()
+        self._qa_extractor = QAExtractor(self._settings)
+        self._qa_pairs = []
+        self._last_final_transcript = ""
         self._task = asyncio.create_task(self._run())
         logger.debug("Transcriber started for session %s", self._session_id)
-        append_debug_log(self._settings.logs_dir, f"[{self._session_id}] transcriber started")
 
     async def stop(self) -> None:
         if self._task is None:
@@ -76,31 +80,29 @@ class Transcriber:
             await self._task
         except Exception as exc:  # pragma: no cover - diagnostics
             logger.exception("Transcriber task raised during stop for session %s: %s", self._session_id, exc)
-            append_debug_log(self._settings.logs_dir, f"[{self._session_id}] transcriber stop exception: {exc}")
         finally:
+            if self._loop:
+                await events.emit_qa_pairs(self._websocket, self._qa_pairs, final=True)
             logger.debug("Transcriber task finished for session %s", self._session_id)
-            append_debug_log(self._settings.logs_dir, f"[{self._session_id}] transcriber stopped")
             self._task = None
 
     async def _run(self) -> None:
         try:
-            append_debug_log(self._settings.logs_dir, f"[{self._session_id}] transcriber _run start")
+            logger.debug("Transcriber run loop starting for session %s", self._session_id)
             await asyncio.to_thread(self._streaming_recognize)
         except DefaultCredentialsError as exc:
             logger.error("Google credentials not configured for session %s: %s", self._session_id, exc)
             if self._loop:
                 await events.emit_error(self._websocket, "GOOGLE_AUTH_MISSING", str(exc))
-            append_debug_log(self._settings.logs_dir, f"[{self._session_id}] credentials missing: {exc}")
         except Exception as exc:  # pragma: no cover - fallback reporting
             logger.exception("Transcriber run failed for session %s: %s", self._session_id, exc)
             if self._loop:
                 await events.emit_error(self._websocket, "UPSTREAM_FAIL", str(exc))
-            append_debug_log(self._settings.logs_dir, f"[{self._session_id}] transcriber failed: {exc}")
         finally:
-            append_debug_log(self._settings.logs_dir, f"[{self._session_id}] transcriber _run end")
+            logger.debug("Transcriber run loop finished for session %s", self._session_id)
 
     def _streaming_recognize(self) -> None:
-        append_debug_log(self._settings.logs_dir, "streaming_recognize begin")
+        logger.debug("Session %s streaming_recognize begin", self._session_id)
         if self._settings.google_application_credentials:
             try:
                 credentials = service_account.Credentials.from_service_account_file(
@@ -117,13 +119,9 @@ class Transcriber:
             audio_channel_count=1,
             language_code=self._settings.rtc_language,
             enable_automatic_punctuation=True,
+            enable_word_time_offsets=True,
             use_enhanced=self._settings.stt_use_enhanced,
             model=self._settings.stt_model,
-            diarization_config=speech.SpeakerDiarizationConfig(
-                enable_speaker_diarization=True,
-                min_speaker_count=2,
-                max_speaker_count=3,
-            )
         )
 
         streaming_config = speech_types.StreamingRecognitionConfig(
@@ -132,20 +130,20 @@ class Transcriber:
             single_utterance=False,
         )
 
-        append_debug_log(self._settings.logs_dir, f"[{self._session_id}] streaming_recognize start")
+        logger.debug("Session %s streaming_recognize start", self._session_id)
 
+        request_iterator = self._request_generator(streaming_config)
         try:
-            responses = client.streaming_recognize(self._request_generator(streaming_config))
+            responses = client.streaming_recognize(requests=request_iterator, config=streaming_config)
             for response in responses:
                 self._handle_response(response)
         except google_exceptions.GoogleAPICallError as exc:
-            logger.warning("Google STT error: %s", exc)
+            logger.warning("Session %s Google STT error: %s", self._session_id, exc)
             if self._loop:
                 asyncio.run_coroutine_threadsafe(
                     events.emit_error(self._websocket, "UPSTREAM_FAIL", str(exc)),
                     self._loop,
                 )
-            append_debug_log(self._settings.logs_dir, f"[{self._session_id}] google stt error: {exc}")
         finally:
             duration = max(time.monotonic() - self._started_at, 0.0)
             logger.debug(
@@ -154,13 +152,8 @@ class Transcriber:
                 duration,
                 self._final_count,
             )
-            append_debug_log(
-                self._settings.logs_dir,
-                f"[{self._session_id}] streaming_recognize finished duration={duration:.2f}s finals={self._final_count}",
-            )
 
     def _request_generator(self, streaming_config: speech_types.StreamingRecognitionConfig):
-        yield speech_types.StreamingRecognizeRequest(streaming_config=streaming_config)
         while not self._stop_event.is_set():
             if self._loop is None:
                 break
@@ -168,15 +161,18 @@ class Transcriber:
             try:
                 chunk = future.result()
             except Exception as exc:
-                append_debug_log(self._settings.logs_dir, f"[{self._session_id}] request_generator future exception: {exc}")
                 logger.warning("request_generator future exception for session %s: %s", self._session_id, exc)
                 break
             if chunk is None:
-                append_debug_log(self._settings.logs_dir, f"[{self._session_id}] request_generator received sentinel")
+                logger.debug("Session %s request_generator received sentinel", self._session_id)
                 break
             if not chunk:
                 continue
-            append_debug_log(self._settings.logs_dir, f"[{self._session_id}] request_generator sending chunk size={len(chunk)}")
+            logger.debug(
+                "Session %s request_generator sending chunk size=%d",
+                self._session_id,
+                len(chunk),
+            )
             yield speech_types.StreamingRecognizeRequest(audio_content=chunk)
 
     def _handle_response(self, response: StreamingRecognizeResponse) -> None:
@@ -202,32 +198,44 @@ class Transcriber:
                 continue
 
             self._partial_text = ""
-            diarized = self._diarizer.build_segments(result)
-            if diarized:
+            new_text = self._extract_new_text(transcript)
+            if not new_text:
+                continue
+
+            asyncio.run_coroutine_threadsafe(
+                events.emit_final_segments(
+                    self._websocket,
+                    [
+                        {
+                            "speaker": None,
+                            "text": new_text,
+                            "start": 0.0,
+                            "end": 0.0,
+                        }
+                    ],
+                ),
+                self._loop,
+            )
+            segment = Segment(
+                speaker=None,
+                text=new_text,
+                start=0.0,
+                end=0.0,
+            )
+            qa_pairs = self._qa_extractor.append_segments([segment])
+            if qa_pairs:
+                self._qa_pairs.extend(qa_pairs)
                 asyncio.run_coroutine_threadsafe(
-                    events.emit_final_segments(
+                    events.emit_qa_pairs(
                         self._websocket,
-                        [segment.to_dict() for segment in diarized],
-                    ),
-                    self._loop,
-                )
-            else:
-                asyncio.run_coroutine_threadsafe(
-                    events.emit_final_segments(
-                        self._websocket,
-                        [
-                            {
-                                "speaker": None,
-                                "text": transcript,
-                                "start": 0.0,
-                                "end": 0.0,
-                            }
-                        ],
+                        qa_pairs,
+                        final=False,
                     ),
                     self._loop,
                 )
 
             self._final_count += 1
+            self._last_final_transcript = transcript
 
             if self._loop:
                 stats = {
@@ -245,3 +253,11 @@ class Transcriber:
                     events.emit_stats(self._websocket, stats),
                     self._loop,
                 )
+
+    def _extract_new_text(self, transcript: str) -> str:
+        if not transcript:
+            return ""
+        if self._last_final_transcript and transcript.startswith(self._last_final_transcript):
+            diff = transcript[len(self._last_final_transcript):]
+            return diff.strip()
+        return transcript
