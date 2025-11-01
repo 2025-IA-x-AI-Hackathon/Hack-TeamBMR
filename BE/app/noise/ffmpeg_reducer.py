@@ -123,8 +123,8 @@ class FFmpegNoiseReducer:
                 try:
                     process.kill()
                     process.wait(timeout=0.2)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.warning("Failed to kill ffmpeg process during cleanup: %s", exc)
 
         if self._stdout_thread and self._stdout_thread.is_alive():
             self._stdout_thread.join(timeout=0.2)
