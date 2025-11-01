@@ -16,6 +16,8 @@ import {
   type SttErrorPayload,
   type SttFinalSegmentsPayload,
   type SttPartialPayload,
+  type SttQaPair,
+  type SttQaPairsPayload,
   type SttStatsPayload,
 } from './stt.types';
 import {
@@ -31,6 +33,7 @@ export interface UseSttSessionResult {
   error: string | null;
   partial: string;
   bubbles: SttBubble[];
+  qaPairs: SttQaPair[];
   stats: SttStatsPayload | null;
   start: () => Promise<void>;
   stop: () => void;
@@ -61,6 +64,7 @@ export function useSttSession(): UseSttSessionResult {
   const [partial, setPartial] = useState('');
   const [bubbles, setBubbles] = useState<SttBubble[]>([]);
   const [stats, setStats] = useState<SttStatsPayload | null>(null);
+  const [qaPairs, setQaPairs] = useState<SttQaPair[]>([]);
 
   const cleanupResources = useCallback(() => {
     dataChannelRef.current?.close();
@@ -108,6 +112,7 @@ export function useSttSession(): UseSttSessionResult {
     cleanupResources();
     setPartial('');
     setStats(null);
+    // QA 결과는 녹음이 끝난 뒤까지 유지하도록 초기화하지 않습니다.
     sessionIdRef.current = null;
     setState('idle');
   }, [cleanupResources, client]);
@@ -227,6 +232,28 @@ export function useSttSession(): UseSttSessionResult {
     setStats(payload);
   }, []);
 
+  const handleQaPairs = useCallback((payload: SttQaPairsPayload) => {
+    const incoming = payload.pairs ?? [];
+    if (!incoming.length && !payload.final) {
+      return;
+    }
+
+    setQaPairs((prev) => {
+      const base = payload.final ? incoming : [...prev, ...incoming];
+      const seen = new Set<string>();
+      const unique: SttQaPair[] = [];
+      for (const pair of base) {
+        const key = `${pair.q_text}|${pair.a_text}|${pair.a_time}`;
+        if (seen.has(key)) {
+          continue;
+        }
+        seen.add(key);
+        unique.push(pair);
+      }
+      return unique;
+    });
+  }, []);
+
   const handleDataChannelMessage = useCallback((payload: unknown) => {
     if (!payload || typeof payload !== 'object') {
       return;
@@ -248,6 +275,7 @@ export function useSttSession(): UseSttSessionResult {
     setPartial('');
     setBubbles([]);
     setStats(null);
+    setQaPairs([]);
     setState('connecting');
     client.connect();
 
@@ -304,6 +332,7 @@ export function useSttSession(): UseSttSessionResult {
       client.subscribe('rtc.candidate', (payload) => handleRtcCandidate(payload as RtcCandidatePayload)),
       client.subscribe('stt.partial', (payload) => handlePartial(payload as SttPartialPayload)),
       client.subscribe('stt.final_segments', (payload) => handleFinalSegments(payload as SttFinalSegmentsPayload)),
+      client.subscribe('stt.qa_pairs', (payload) => handleQaPairs(payload as SttQaPairsPayload)),
       client.subscribe('stt.error', (payload) => handleSttError(payload as SttErrorPayload)),
       client.subscribe('stt.stats', (payload) => handleStats(payload as SttStatsPayload)),
       client.subscribe('error', (payload) => handleSttError(payload as GenericErrorPayload)),
@@ -322,6 +351,7 @@ export function useSttSession(): UseSttSessionResult {
     handleSessionReady,
     handleStats,
     handleSttError,
+    handleQaPairs,
   ]);
 
   return {
@@ -329,6 +359,7 @@ export function useSttSession(): UseSttSessionResult {
     error,
     partial,
     bubbles,
+    qaPairs,
     stats,
     start,
     stop,

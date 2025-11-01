@@ -5,6 +5,7 @@ import {
 } from 'react';
 import { RecorderControls } from './components/RecorderControls';
 import { TranscriptDisplay } from './components/TranscriptDisplay';
+import { QaSummaryPanel } from './components/QaSummaryPanel';
 import { RoomsPanel } from './components/RoomsPanel';
 import { ChecklistPanel } from './components/ChecklistPanel';
 import { OcrPanel } from './components/OcrPanel';
@@ -17,6 +18,7 @@ function App() {
     error,
     partial,
     bubbles,
+    qaPairs,
     stats,
     start,
     stop,
@@ -66,6 +68,10 @@ function App() {
             <TranscriptDisplay
               bubbles={bubbles}
               partial={partial}
+            />
+            <QaSummaryPanel
+              pairs={qaPairs}
+              visible={state === 'idle'}
             />
             {stats ? (
               <div className="panel stats-panel">
