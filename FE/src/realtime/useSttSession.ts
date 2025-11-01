@@ -292,7 +292,7 @@ export function useSttSession(): UseSttSessionResult {
     const unsubscribes = [
       client.subscribe('session.ready', (payload) => handleSessionReady(payload as SessionReadyPayload)),
       client.subscribe('session.close', () => handleSessionClose()),
-      client.subscribe('rtc.answer', (payload) => handleRtcAnswer(payload as RtcAnswerPayload)),
+      client.subscribe('stt.webrtc.answer', (payload) => handleRtcAnswer(payload as RtcAnswerPayload)),
       client.subscribe('rtc.candidate', (payload) => handleRtcCandidate(payload as RtcCandidatePayload)),
       client.subscribe('stt.webrtc.ice', (payload) => handleRtcCandidate(payload as RtcCandidatePayload)),
       client.subscribe('stt.partial', (payload) => handlePartial(payload as SttPartialPayload)),
