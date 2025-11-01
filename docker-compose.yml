@@ -5,6 +5,8 @@ services:
       - '8080:8080'
     env_file:
       - ./BE/.env
+    volumes:
+      - ./data/logs:/app/data/logs
     restart: unless-stopped
 
   frontend:
