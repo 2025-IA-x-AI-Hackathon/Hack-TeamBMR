@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRES: int = 3600
+    UPSTAGE_API_URL: str = "https://api.upstage.ai/v1/document-digitization"
+    UPSTAGE_API_KEY: str
+    OPENAI_API_KEY: str
+    OPENAI_MODEL: str = "gpt-4o-mini"
 
     class Config:
         env_file = ".env"
