@@ -19,8 +19,8 @@ router = APIRouter(prefix="/ocr")
 )
 async def upload_ocr_document(
     file: UploadFile = File(...),
-    report_id: Optional[str] = Query(None, description="Optional report identifier to group OCR uploads."),
-    file_type: Optional[str] = Query(None, description="Type of the OCR report."),
+    # report_id: Optional[str] = Query(None, description="Optional report identifier to group OCR uploads."),
+    # file_type: Optional[str] = Query(None, description="Type of the OCR report."),
     user_id: str = Depends(get_authenticated_user_id),
     service: OcrService = Depends(get_ocr_service),
 ) -> OcrUploadResponse:
@@ -31,9 +31,9 @@ async def upload_ocr_document(
 
     return await service.upload_document(
         user_id,
-        report_id,
+        # report_id,
         filename,
-        file_type,
+        # file_type,
         content,
         file.content_type,
     )

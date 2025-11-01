@@ -18,17 +18,17 @@ class OcrService:
     async def upload_document(
         self,
         user_id: str,
-        report_id: Optional[str],
+        # report_id: Optional[str],
         filename: str,
-        file_type: Optional[str],
+        # file_type: Optional[str],
         content: bytes,
         content_type: Optional[str],
     ) -> OcrUploadResponse:
-        safe_report_id = report_id or "unassigned"
-        safe_file_type = file_type or "generic"
+        # safe_report_id = report_id or "unassigned"
+        # safe_file_type = file_type or "generic"
         file_stem = Path(filename).stem or f"upload-{uuid4().hex[:8]}"
-        ocr_id = f"{safe_report_id}-{safe_file_type}-{file_stem}"
-        object_key = f"ocr/{user_id}/{safe_report_id}/{safe_file_type}/{filename}"
+        ocr_id = f"{file_stem}"
+        object_key = f"ocr/{user_id}/{filename}"
 
         await self._storage.upload_bytes(
             object_key,
@@ -39,7 +39,7 @@ class OcrService:
         record = OcrBase(
             ocr_id=ocr_id,
             user_id=user_id,
-            report_id=report_id,
+            report_id=None,
             status="done",
             detail=await ocr_usecase.process(object_key),  # 추후 합치면 제공될 예정!
             object_key=object_key,
