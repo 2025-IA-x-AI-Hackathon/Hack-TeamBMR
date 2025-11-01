@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import logging
+import json
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Optional
@@ -39,6 +40,10 @@ class Settings(BaseSettings):
     stt_model: str = Field(default="default", alias="STT_MODEL")
     stt_use_enhanced: bool = Field(default=True, alias="STT_USE_ENHANCED")
 
+    ice_servers_json: Optional[str] = Field(default=None, alias="ICE_SERVERS_JSON")
+    ice_servers: list[dict[str, Any]] = Field(
+        default_factory=lambda: [{"urls": ["stun:stun.l.google.com:19302"]}],
+    )
     # Storage / logging
     storage_dir: Path = Field(default=Path("./data/recordings"), alias="STORAGE_DIR")
     analysis_dir: Path = Field(default=Path("./data/analysis"), alias="ANALYSIS_DIR")
@@ -64,6 +69,28 @@ class Settings(BaseSettings):
             else:
                 logging.getLogger(__name__).warning(
                     "Google credentials file not found at %s", credentials_path,
+                )
+
+        if self.ice_servers_json:
+            try:
+                parsed = json.loads(self.ice_servers_json)
+                if isinstance(parsed, list):
+                    normalized: list[dict[str, Any]] = []
+                    for entry in parsed:
+                        if isinstance(entry, str):
+                            normalized.append({"urls": entry})
+                        elif isinstance(entry, dict) and "urls" in entry:
+                            normalized.append(entry)
+                        else:
+                            logging.getLogger(__name__).warning(
+                                "Ignoring invalid ICE server entry: %s",
+                                entry,
+                            )
+                    if normalized:
+                        self.ice_servers = normalized
+            except json.JSONDecodeError:
+                logging.getLogger(__name__).warning(
+                    "Failed to parse ICE_SERVERS_JSON. Falling back to defaults.",
                 )
 
         for directory in (self.storage_dir, self.analysis_dir, self.logs_dir):

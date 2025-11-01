@@ -54,7 +54,22 @@ class STTSession:
         )
         self._transcriber_started = False
 
-        configuration = RTCConfiguration(iceServers=[RTCIceServer("stun:stun.l.google.com:19302")])
+        ice_servers: list[RTCIceServer] = []
+        for entry in settings.ice_servers:
+            try:
+                if isinstance(entry, str):
+                    ice_servers.append(RTCIceServer(entry))
+                elif isinstance(entry, dict):
+                    ice_servers.append(RTCIceServer(**entry))
+                else:
+                    logger.warning("Ignoring unsupported ICE server entry: %s", entry)
+            except Exception as exc:  # pragma: no cover - validation guard
+                logger.warning("Failed to parse ICE server entry %s: %s", entry, exc)
+
+        if not ice_servers:
+            ice_servers = [RTCIceServer("stun:stun.l.google.com:19302")]
+
+        configuration = RTCConfiguration(iceServers=ice_servers)
         self._pc = RTCPeerConnection(configuration=configuration)
         self._pc.addTransceiver("audio", direction="recvonly")
         self._pc.on("connectionstatechange")(self._on_connection_state_change)
@@ -103,7 +118,17 @@ class STTSession:
             sdpMid=payload.get("sdpMid"),
             sdpMLineIndex=payload.get("sdpMLineIndex"),
         )
-        await self._pc.addIceCandidate(rtc_candidate)
+        logger.debug(
+            "Session %s applying remote ICE candidate (mid=%s mline=%s): %s",
+            self.session_id,
+            rtc_candidate.sdpMid,
+            rtc_candidate.sdpMLineIndex,
+            candidate_sdp,
+        )
+        try:
+            await self._pc.addIceCandidate(rtc_candidate)
+        except Exception as exc:  # pragma: no cover - diagnostics
+            logger.warning("Session %s failed to add ICE candidate: %s", self.session_id, exc)
 
     async def stop(self) -> None:
         if self._closed.is_set():
