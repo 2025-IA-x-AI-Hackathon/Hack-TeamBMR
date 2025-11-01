@@ -13,7 +13,7 @@ from aiortc import (
 )
 from aiortc.contrib.media import MediaRelay
 from aiortc.mediastreams import MediaStreamTrack
-from aiortc.rtcicetransport import candidate_from_sdp, candidate_to_sdp
+from aiortc.rtcicetransport import Candidate
 from fastapi import WebSocket
 
 from app.core.config import Settings
@@ -78,6 +78,7 @@ class STTSession:
         self._pc.on("icecandidate")(self._on_icecandidate)
 
     async def handle_offer(self, offer: Dict[str, Any]) -> Dict[str, Any]:
+        logger.debug("Session %s handling offer", self.session_id)
         if "sdp" not in offer or "type" not in offer:
             raise ValueError("Invalid offer payload")
 
@@ -103,7 +104,7 @@ class STTSession:
             await self._pc.addIceCandidate(None)
             return
         
-        parsed_candidate = candidate_from_sdp(candidate_sdp)
+        parsed_candidate = Candidate.from_sdp(candidate_sdp)
         rtc_candidate = RTCIceCandidate(
             component=parsed_candidate.component,
             foundation=parsed_candidate.foundation,
@@ -129,6 +130,7 @@ class STTSession:
             await self._pc.addIceCandidate(rtc_candidate)
         except Exception as exc:  # pragma: no cover - diagnostics
             logger.warning("Session %s failed to add ICE candidate: %s", self.session_id, exc)
+            raise
 
     async def stop(self) -> None:
         if self._closed.is_set():
@@ -175,6 +177,8 @@ class STTSession:
         logger.debug("Session %s connection state: %s", self.session_id, self._pc.connectionState)
         if self._pc.connectionState in {"failed", "closed"}:
             asyncio.create_task(self.stop())
+        if self._pc.connectionState == "failed":
+            logger.error("Session %s peer connection failed", self.session_id)
 
     def _on_track(self, track: MediaStreamTrack) -> None:
         if track.kind != "audio":
@@ -213,7 +217,7 @@ class STTSession:
             payload: Dict[str, Any] = {"candidate": None}
         else:
             payload = {
-                "candidate": candidate_to_sdp(candidate),
+                "candidate": candidate.to_sdp(),
                 "sdpMid": candidate.sdpMid,
                 "sdpMLineIndex": candidate.sdpMLineIndex,
             }
