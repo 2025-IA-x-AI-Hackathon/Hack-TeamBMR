@@ -166,6 +166,11 @@ export function useSttSession(): UseSttSessionResult {
     }
 
     try {
+      if (!payload.candidate) {
+        await pcRef.current.addIceCandidate(null);
+        return;
+      }
+
       const candidate: RTCIceCandidateInit = {
         candidate: payload.candidate,
         sdpMid: payload.sdpMid ?? undefined,
@@ -289,6 +294,7 @@ export function useSttSession(): UseSttSessionResult {
       client.subscribe('session.close', () => handleSessionClose()),
       client.subscribe('rtc.answer', (payload) => handleRtcAnswer(payload as RtcAnswerPayload)),
       client.subscribe('rtc.candidate', (payload) => handleRtcCandidate(payload as RtcCandidatePayload)),
+      client.subscribe('stt.webrtc.ice', (payload) => handleRtcCandidate(payload as RtcCandidatePayload)),
       client.subscribe('stt.partial', (payload) => handlePartial(payload as SttPartialPayload)),
       client.subscribe('stt.final_segments', (payload) => handleFinalSegments(payload as SttFinalSegmentsPayload)),
       client.subscribe('stt.error', (payload) => handleSttError(payload as SttErrorPayload)),
