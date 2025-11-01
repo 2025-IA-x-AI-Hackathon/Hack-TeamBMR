@@ -1,0 +1,65 @@
+{
+	"title": "문서 스키마 예시",
+	"type": "object",
+	"properties": {
+		"문서정보": {
+			"type": "object",
+			"properties": {
+				"문서명": {
+					"type": "string"
+				},
+				"작성일": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"문서유형": {
+					"type": "string"
+				}
+			}
+		},
+		"본문": {
+			"type": "array",
+			"description": "문서의 주요 항목 리스트",
+			"items": {
+				"type": "object",
+				"properties": {
+					"항목명": {
+						"type": "string"
+					},
+					"내용": {
+						"type": "string"
+					}
+				}
+			}
+		},
+		"서명": {
+			"type": "object",
+			"properties": {
+				"작성자": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"확인자": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"날짜": {
+					"type": [
+						"string",
+						"null"
+					]
+				}
+			}
+		}
+	},
+	"required": [
+		"문서정보",
+		"본문"
+	]
+}

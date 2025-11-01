@@ -1,0 +1,163 @@
+{
+	"title": "주택임대차표준계약서_서명란",
+	"type": "object",
+	"properties": {
+		"임대인": {
+			"type": "object",
+			"properties": {
+				"주소": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"주민등록번호": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"전화": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"성명": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"대리인여부": {
+					"type": [
+						"boolean",
+						"null"
+					]
+				},
+				"대리인": {
+					"type": "object",
+					"properties": {
+						"주소": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"주민등록번호": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"성명": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				}
+			}
+		},
+		"임차인": {
+			"type": "object",
+			"properties": {
+				"주소": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"주민등록번호": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"전화": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"성명": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"대리인여부": {
+					"type": [
+						"boolean",
+						"null"
+					]
+				},
+				"대리인": {
+					"type": "object",
+					"properties": {
+						"주소": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"주민등록번호": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"성명": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				}
+			}
+		},
+		"개업공인중개사": {
+			"type": "object",
+			"properties": {
+				"사무소소재지": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"사무소명칭": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"대표": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"등록번호": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"전화": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"소속공인중개사": {
+					"type": [
+						"string",
+						"null"
+					]
+				}
+			}
+		}
+	}
+}

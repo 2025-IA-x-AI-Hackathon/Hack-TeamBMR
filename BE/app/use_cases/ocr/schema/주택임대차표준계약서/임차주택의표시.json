@@ -1,0 +1,134 @@
+{
+	"title": "주택임대차표준계약서_임차주택의표시",
+	"type": "object",
+	"properties": {
+		"주택정보": {
+			"type": "object",
+			"properties": {
+				"소재지": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"토지": {
+					"type": "object",
+					"properties": {
+						"지목": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"면적": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"단위": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				},
+				"건물": {
+					"type": "object",
+					"properties": {
+						"구조용도": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"면적": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"단위": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				},
+				"임차할부분": {
+					"type": "object",
+					"properties": {
+						"상세": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"면적": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"단위": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				}
+			}
+		},
+		"계약종류": {
+			"type": "object",
+			"properties": {
+				"신규계약여부": {
+					"type": "boolean"
+				},
+				"재계약여부": {
+					"type": "boolean"
+				},
+				"갱신계약여부": {
+					"type": "boolean"
+				},
+				"갱신계약정보": {
+					"type": "object",
+					"properties": {
+						"기간": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"금액": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"차임": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				}
+			}
+		},
+		"권리관계": {
+			"type": "object",
+			"properties": {
+				"미납국세지방세여부": {
+					"type": "boolean"
+				},
+				"선순위확정일자현황여부": {
+					"type": "boolean"
+				}
+			}
+		}
+	}
+}
