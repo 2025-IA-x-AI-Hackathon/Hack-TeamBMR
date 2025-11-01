@@ -1,5 +1,4 @@
-import { api, ApiResponse } from './http';
-import { LlmReport } from '../types/domain';
+import { api } from './http';
 
 export async function triggerLlmReport(reportId: string): Promise<void> {
   await api(`/v1/llm/reports/${encodeURIComponent(reportId)}`, {
@@ -7,6 +6,6 @@ export async function triggerLlmReport(reportId: string): Promise<void> {
   });
 }
 
-export async function fetchLlmReport(reportId: string): Promise<ApiResponse<LlmReport>> {
-  return api<LlmReport>(`/v1/llm/reports/${encodeURIComponent(reportId)}`);
+export function fetchLlmReport(reportId: string): Promise<Response> {
+  return api(`/v1/llm/reports/${encodeURIComponent(reportId)}`);
 }

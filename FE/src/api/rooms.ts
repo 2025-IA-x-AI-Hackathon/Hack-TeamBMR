@@ -7,11 +7,11 @@ import {
 } from '../types/domain';
 
 export async function createRoom(payload: CreateRoomPayload): Promise<Room> {
-  const { data } = await api<Room>('/v1/rooms', {
+  const response = await api('/v1/rooms', {
     method: 'POST',
     body: JSON.stringify(payload),
   });
-  return data;
+  return response.json() as Promise<Room>;
 }
 
 export interface RoomsQueryParams {
@@ -31,13 +31,13 @@ export async function fetchRooms(params: RoomsQueryParams = {}): Promise<RoomsLi
 
   const query = searchParams.toString();
   const endpoint = query ? `/v1/rooms?${query}` : '/v1/rooms';
-  const { data } = await api<RoomsListResponse>(endpoint);
-  return data;
+  const response = await api(endpoint);
+  return response.json() as Promise<RoomsListResponse>;
 }
 
 export async function fetchRoom(roomId: string): Promise<Room> {
-  const { data } = await api<Room>(`/v1/rooms/${encodeURIComponent(roomId)}`);
-  return data;
+  const response = await api(`/v1/rooms/${encodeURIComponent(roomId)}`);
+  return response.json() as Promise<Room>;
 }
 
 export async function deleteRoom(roomId: string): Promise<void> {
@@ -58,14 +58,16 @@ export async function uploadRoomPhoto(
   const form = new FormData();
   form.append('file', file);
 
-  const { data } = await api<RoomPhotoUploadResponse & {
-    photo_id?: string;
-    object_url?: string;
-    uploaded_at?: string;
-  }>(`/v1/rooms/${encodeURIComponent(roomId)}/photos`, {
+  const response = await api(`/v1/rooms/${encodeURIComponent(roomId)}/photos`, {
     method: 'POST',
     body: form,
   });
+
+  const data = await response.json() as RoomPhotoUploadResponse & {
+    photo_id?: string;
+    object_url?: string;
+    uploaded_at?: string;
+  };
 
   const photo: RoomPhoto = {
     photoId: data.photoId ?? data.photo_id ?? '',

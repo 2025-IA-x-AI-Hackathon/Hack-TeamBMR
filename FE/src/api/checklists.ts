@@ -18,7 +18,8 @@ export async function fetchChecklistTemplates(
     category,
   });
 
-  const { data } = await api<ChecklistTemplatesResponse>(`/v1/checklists?${params.toString()}`);
+  const response = await api(`/v1/checklists?${params.toString()}`);
+  const data = await response.json() as ChecklistTemplatesResponse;
   return data.templates;
 }
 
