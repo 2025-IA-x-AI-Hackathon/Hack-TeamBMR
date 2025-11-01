@@ -8,11 +8,11 @@ from aiortc import (
     RTCConfiguration,
     RTCPeerConnection,
     RTCSessionDescription,
-    RTCIceCandidate,
     RTCIceServer,
 )
 from aiortc.contrib.media import MediaRelay
 from aiortc.mediastreams import MediaStreamTrack
+from aiortc.rtcicecandidate import candidate_from_sdp, candidate_to_sdp
 from fastapi import WebSocket
 
 from app.core.config import Settings
@@ -82,11 +82,9 @@ class STTSession:
             await self._pc.addIceCandidate(None)
             return
 
-        ice_candidate = RTCIceCandidate(
-            sdpMid=payload.get("sdpMid"),
-            sdpMLineIndex=payload.get("sdpMLineIndex"),
-            candidate=candidate_value,
-        )
+        ice_candidate = candidate_from_sdp(candidate_value)
+        ice_candidate.sdpMid = payload.get("sdpMid")
+        ice_candidate.sdpMLineIndex = payload.get("sdpMLineIndex")
         await self._pc.addIceCandidate(ice_candidate)
 
     async def stop(self) -> None:
@@ -165,7 +163,7 @@ class STTSession:
         else:
             payload = {
                 "session_id": self.session_id,
-                "candidate": candidate.candidate,
+                "candidate": candidate_to_sdp(candidate),
                 "sdpMid": candidate.sdpMid,
                 "sdpMLineIndex": candidate.sdpMLineIndex,
             }
