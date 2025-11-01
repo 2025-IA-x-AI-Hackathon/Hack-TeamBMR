@@ -15,11 +15,13 @@ async def get_authenticated_user_id(token: str | None = Cookie(default=None, ali
 
 
 def set_auth_cookie(response: Response, token: str) -> None:
+    secure = not settings.debug
+    same_site = "lax" if settings.debug else "none"
     response.set_cookie(
         key=AUTH_COOKIE_NAME,
         value=token,
         httponly=True,
         max_age=settings.ACCESS_TOKEN_EXPIRES,
-        samesite="none",
-        secure=True,
+        samesite=same_site,
+        secure=secure,
     )

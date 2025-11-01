@@ -8,7 +8,7 @@ from typing import Iterable, Optional, TYPE_CHECKING
 from google.api_core import exceptions as google_exceptions
 from google.cloud import speech_v1 as speech
 from google.cloud.speech_v1 import types as speech_types
-from google.cloud.speech_v1.types import StreamingRecognizeResponse
+from google.cloud.speech_v1.types import StreamingRecognizeResponse, SpeechRecognitionResult
 from google.auth.exceptions import DefaultCredentialsError
 from google.oauth2 import service_account
 
@@ -273,20 +273,20 @@ class Transcriber:
             return diff.strip()
         return transcript
 
-    def _build_segment(self, result: StreamingRecognizeResponse, text: str) -> Optional[Segment]:
-        if not result.results:
-            return None
-        candidate = result.results[0]
-        if not candidate.alternatives:
+    def _build_segment(self, result: SpeechRecognitionResult, text: str) -> Optional[Segment]:
+        if not result.alternatives:
             return None
 
-        words = list(candidate.alternatives[0].words)
+        alternative = result.alternatives[0]
+        words = list(getattr(alternative, "words", []))
         if words:
-            start = self._duration_to_seconds(words[0].start_time)
-            end = self._duration_to_seconds(words[-1].end_time)
+            start = self._duration_to_seconds(getattr(words[0], "start_time", None))
+            end = self._duration_to_seconds(getattr(words[-1], "end_time", None))
         else:
             start = self._transcript_segments[-1].end if self._transcript_segments else 0.0
-            end = start
+            end = self._duration_to_seconds(getattr(result, "result_end_time", None))
+            if end < start:
+                end = start
 
         return Segment(speaker=None, text=text, start=start, end=end)
 

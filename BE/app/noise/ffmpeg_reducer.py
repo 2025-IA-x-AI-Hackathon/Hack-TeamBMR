@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import subprocess
 import threading
 import time
@@ -170,9 +171,31 @@ class FFmpegNoiseReducer:
         if self._process is None or self._process.stdin is None:
             return False
         try:
-            self._process.stdin.write(chunk)
-            self._process.stdin.flush()
+            if hasattr(self._process.stdin, "write"):
+                self._process.stdin.write(chunk)
+            else:
+                os.write(self._process.stdin.fileno(), chunk)  # type: ignore[arg-type]
+            if hasattr(self._process.stdin, "flush"):
+                self._process.stdin.flush()
             return True
+        except (BrokenPipeError, OSError) as exc:  # pragma: no cover - defensive
+            logger.warning("ffmpeg noise reducer pipe broken: %s", exc)
+            self.close()
+            self._spawn()
+            if self._process and self._process.stdin:
+                try:
+                    if hasattr(self._process.stdin, "write"):
+                        self._process.stdin.write(chunk)
+                    else:
+                        os.write(self._process.stdin.fileno(), chunk)  # type: ignore[arg-type]
+                    if hasattr(self._process.stdin, "flush"):
+                        self._process.stdin.flush()
+                    logger.info("ffmpeg noise reducer process respawned successfully")
+                    return True
+                except Exception as retry_exc:  # pragma: no cover - defensive
+                    logger.warning("Failed to re-feed ffmpeg noise reducer after respawn: %s", retry_exc)
+            self._available = False
+            return False
         except Exception as exc:  # pragma: no cover - defensive
             logger.warning("Failed to feed ffmpeg noise reducer: %s", exc)
             self.close()
