@@ -163,8 +163,8 @@ class FFmpegNoiseReducer:
                 if not line:
                     break
                 logger.debug("ffmpeg noise reducer: %s", line.decode("utf-8", errors="ignore").strip())
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.warning("Exception in ffmpeg noise reducer stderr thread: %s", exc)
 
     def _feed(self, chunk: bytes) -> bool:
         if self._process is None or self._process.stdin is None:
