@@ -13,14 +13,14 @@ router = APIRouter(prefix="/ocr")
 
 
 @router.post(
-    "/uploads",
+    "/uploads/{room_id}",
     status_code=status.HTTP_201_CREATED,
     response_model=OcrUploadResponse,
 )
 async def upload_ocr_document(
     file: UploadFile = File(...),
-    # report_id: Optional[str] = Query(None, description="Optional report identifier to group OCR uploads."),
-    # file_type: Optional[str] = Query(None, description="Type of the OCR report."),
+    room_id: str = Path(..., description="room_id"),
+    file_type: Optional[str] = Query(None, description="Type of the OCR report."),
     user_id: str = Depends(get_authenticated_user_id),
     service: OcrService = Depends(get_ocr_service),
 ) -> OcrUploadResponse:
@@ -31,25 +31,25 @@ async def upload_ocr_document(
 
     return await service.upload_document(
         user_id,
-        # report_id,
+        room_id,
         filename,
-        # file_type,
+        file_type,
         content,
         file.content_type,
     )
 
 
 @router.get(
-    "/{report_id}",
+    "/{room_id}",
     response_model=OcrListResponse,
     responses={status.HTTP_202_ACCEPTED: {"model": OcrListResponse}},
 )
 async def get_ocr_results(
-    report_id: str = Path(..., description="Report identifier associated with OCR uploads."),
+    room_id: str = Path(..., description="room_id"),
     user_id: str = Depends(get_authenticated_user_id),
     service: OcrService = Depends(get_ocr_service),
 ) -> OcrListResponse | JSONResponse:
-    items, pending = await service.list_results(user_id, report_id)
+    items, pending = await service.list_results(user_id, room_id)
     response = OcrListResponse(items=items)
     if pending:
         return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=response.model_dump())

@@ -39,8 +39,8 @@ class OcrRepository:
         document = await self._collection.find_one({"_id": ocr_id, "user_id": user_id})
         return self._deserialize(document)
 
-    async def list_by_report(self, user_id: str, report_id: str) -> List[OcrBase]:
-        cursor = self._collection.find({"user_id": user_id, "report_id": report_id}).sort("created_at", -1)
+    async def list_by_room(self, user_id: str, room_id: str) -> List[OcrBase]:
+        cursor = self._collection.find({"user_id": user_id, "room_id": room_id}).sort("created_at", -1)
         records: List[OcrBase] = []
         async for document in cursor:
             record = self._deserialize(document)
