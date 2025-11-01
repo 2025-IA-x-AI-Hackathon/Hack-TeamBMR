@@ -5,7 +5,7 @@ from typing import List
 from fastapi import APIRouter, Depends, File, HTTPException, Path, UploadFile, status
 
 from app.api.dependencies import get_authenticated_user_id
-from app.models import RoomBase, RoomDetailResponse, RoomPhoto
+from app.models import RoomCreateRequest, RoomDetailResponse, RoomPhoto
 from app.services import RoomService, get_room_service
 
 router = APIRouter()
@@ -17,7 +17,7 @@ router = APIRouter()
     response_model=RoomDetailResponse,
 )
 async def create_room(
-    payload: RoomBase,
+    payload: RoomCreateRequest,
     user_id: str = Depends(get_authenticated_user_id),
     service: RoomService = Depends(get_room_service),
 ) -> RoomDetailResponse:

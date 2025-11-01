@@ -6,7 +6,7 @@ from .checklist import (
 from .auth import AuthResponse
 from .llm import LLMReportAck, LLMReportDetail, LLMReportTriggerPayload
 from .ocr import OcrBase, OcrDetailResponse, OcrListResponse, OcrUploadResponse
-from .room import RoomBase, RoomChecklist, RoomDetailResponse, RoomPhoto
+from .room import RoomBase, RoomChecklist, RoomCreateRequest, RoomDetailResponse, RoomPhoto
 
 __all__ = [
     "ChecklistResponse",
@@ -22,6 +22,7 @@ __all__ = [
     "OcrUploadResponse",
     "RoomBase",
     "RoomChecklist",
+    "RoomCreateRequest",
     "RoomDetailResponse",
     "RoomPhoto",
 ]

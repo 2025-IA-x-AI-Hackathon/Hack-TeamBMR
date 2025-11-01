@@ -4,7 +4,7 @@ from typing import List, Optional
 from uuid import uuid4
 
 from app.database.mongodb import get_rooms_collection, get_session
-from app.models import RoomBase, RoomDetailResponse, RoomPhoto
+from app.models import RoomBase, RoomCreateRequest, RoomDetailResponse, RoomPhoto
 from app.repositories import RoomRepository
 from app.services.storage_service import StorageService, get_storage_service
 
@@ -16,7 +16,7 @@ class RoomService:
         self._repository = repository
         self._storage = storage
 
-    async def create_room(self, user_id: str, payload: RoomBase) -> RoomDetailResponse:
+    async def create_room(self, user_id: str, payload: RoomCreateRequest) -> RoomDetailResponse:
         room = self._materialize_room(user_id, payload)
         async with get_session() as session:
             await self._repository.insert_room(room, session=session)
@@ -86,9 +86,9 @@ class RoomService:
         url = await self._storage.generate_presigned_url(object_key)
         return RoomPhoto(photo_id=photo_id, object_url=url)
 
-    def _materialize_room(self, user_id: str, payload: RoomBase) -> RoomBase:
-        room_id = payload.room_id or f"rm_{uuid4().hex[:10]}"
-        data = payload.model_dump(exclude={"room_id", "user_id", "created_at"})
+    def _materialize_room(self, user_id: str, payload: RoomCreateRequest) -> RoomBase:
+        room_id = f"rm_{uuid4().hex[:10]}"
+        data = payload.model_dump()
         return RoomBase(**data, room_id=room_id, user_id=user_id)
 
     async def _to_response(
