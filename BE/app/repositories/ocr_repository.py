@@ -16,6 +16,25 @@ class OcrRepository:
         document["_id"] = document["ocr_id"]
         await self._collection.insert_one(document, session=session)
 
+    async def upsert(self, record: OcrBase, *, session: Optional[AsyncIOMotorClientSession] = None) -> None:
+        if not record.ocr_id:
+            raise ValueError("ocr_id is required for upsert operations.")
+
+        document = record.model_dump(exclude_none=True)
+        ocr_id = document.pop("ocr_id", None)
+        created_at = document.pop("created_at", None)
+
+        update_doc = {"$set": document | {"ocr_id": ocr_id}}
+        if created_at is not None:
+            update_doc["$setOnInsert"] = {"created_at": created_at, "ocr_id": ocr_id}
+
+        await self._collection.update_one(
+            {"_id": record.ocr_id},
+            update_doc,
+            upsert=True,
+            session=session,
+        )
+
     async def get(self, user_id: str, ocr_id: str) -> Optional[OcrBase]:
         document = await self._collection.find_one({"_id": ocr_id, "user_id": user_id})
         return self._deserialize(document)
