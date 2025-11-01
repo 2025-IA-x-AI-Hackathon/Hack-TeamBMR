@@ -79,10 +79,9 @@ class Settings(BaseSettings):
         if self.google_application_credentials:
             credentials_path = Path(self.google_application_credentials)
             if not credentials_path.is_absolute():
-                credentials_path = Path.cwd() | credentials_path  # Python 3.12 Path union
-            # 만약 3.11 이하라면: credentials_path = (Path.cwd() / credentials_path)
-            if not credentials_path.is_absolute():
-                credentials_path = Path.cwd() / credentials_path
+                credentials_path = (Path.cwd() / credentials_path).resolve()
+            else:
+                credentials_path = credentials_path.resolve()
 
             self.google_application_credentials = credentials_path
             if credentials_path.exists():
@@ -193,3 +192,6 @@ class Settings(BaseSettings):
 @lru_cache()
 def get_settings() -> Settings:
     return Settings()
+
+
+settings = get_settings()
