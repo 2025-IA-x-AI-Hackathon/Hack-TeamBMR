@@ -1,48 +1,20 @@
-from typing import List, Optional
-
-from pydantic import BaseModel
-
-
-class LLMReportOptions(BaseModel):
-    lang: str
+from datetime import datetime
+from typing import Any, Dict, Optional
+from pydantic import BaseModel, Field
 
 
 class LLMReportTriggerPayload(BaseModel):
-    sttId: str
-    ocrId: str
-    options: Optional[LLMReportOptions] = None
+    prompt: Optional[str] = Field(
+        default=None,
+        description="Optional user-supplied prompt or instruction for the report generation.",
+    )
 
+class LLMReportAck(BaseModel):
+    report_id: str = Field(..., description="Identifier of the report that was queued.")
+    status: str = Field(..., description="Current state, e.g. 'queued' or 'processing'.")
 
-class LLMReportTriggerResponse(BaseModel):
-    reportId: str
+class LLMReportDetail(BaseModel):
+    report_id: str
     status: str
-
-
-class LLMMatchItem(BaseModel):
-    id: str
-    text: str
-
-
-class LLMReportResult(BaseModel):
-    reportId: str
-    status: str
-    matched: List[LLMMatchItem]
-    missing: List[LLMMatchItem]
-    conflict: List[LLMMatchItem]
-    summary: str
-
-
-class LLMReportProgress(BaseModel):
-    reportId: str
-    status: str
-    progress: float
-
-
-class LLMReportListItem(BaseModel):
-    reportId: str
-    status: str
-    createdAt: str
-
-
-class LLMReportListResponse(BaseModel):
-    items: List[LLMReportListItem]
+    created_at: datetime
+    detail: Dict[str, Any] = Field(default_factory=dict)
