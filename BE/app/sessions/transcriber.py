@@ -15,6 +15,7 @@ from google.oauth2 import service_account
 from app.core.config import Settings
 from app.sessions import events
 from app.sessions.diarization import DiarizationProcessor, Segment
+from app.util.debug_log import append_debug_log
 
 if TYPE_CHECKING:
     from app.sessions.audio_pipeline import AudioPipeline
@@ -57,6 +58,7 @@ class Transcriber:
         self._started_at = time.monotonic()
         self._task = asyncio.create_task(self._run())
         logger.debug("Transcriber started for session %s", self._session_id)
+        append_debug_log(self._settings.logs_dir, f"[{self._session_id}] transcriber started")
 
     async def stop(self) -> None:
         if self._task is None:
@@ -72,6 +74,7 @@ class Transcriber:
         logger.debug("Awaiting transcriber task shutdown for session %s", self._session_id)
         await self._task
         logger.debug("Transcriber task finished for session %s", self._session_id)
+        append_debug_log(self._settings.logs_dir, f"[{self._session_id}] transcriber stopped")
         self._task = None
 
     async def _run(self) -> None:
@@ -81,10 +84,12 @@ class Transcriber:
             logger.error("Google credentials not configured for session %s: %s", self._session_id, exc)
             if self._loop:
                 await events.emit_error(self._websocket, "GOOGLE_AUTH_MISSING", str(exc))
+            append_debug_log(self._settings.logs_dir, f"[{self._session_id}] credentials missing: {exc}")
         except Exception as exc:  # pragma: no cover - fallback reporting
             logger.exception("Transcriber run failed for session %s: %s", self._session_id, exc)
             if self._loop:
                 await events.emit_error(self._websocket, "UPSTREAM_FAIL", str(exc))
+            append_debug_log(self._settings.logs_dir, f"[{self._session_id}] transcriber failed: {exc}")
 
     def _streaming_recognize(self) -> None:
         if self._settings.google_application_credentials:
