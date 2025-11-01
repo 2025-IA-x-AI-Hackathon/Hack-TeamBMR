@@ -26,7 +26,7 @@ class OcrRepository:
 
         update_doc = {"$set": document | {"ocr_id": ocr_id}}
         if created_at is not None:
-            update_doc["$setOnInsert"] = {"created_at": created_at, "ocr_id": ocr_id}
+            update_doc["$setOnInsert"] = {"created_at": created_at}
 
         await self._collection.update_one(
             {"_id": record.ocr_id},

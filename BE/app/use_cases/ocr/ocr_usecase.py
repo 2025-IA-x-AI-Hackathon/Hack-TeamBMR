@@ -9,7 +9,7 @@ class OCRUsecase:
     def __init__(self, s3_service: S3Service):
         self.s3_service = s3_service
 
-    def process(self, s3_key: str) -> dict:
+    async def process(self, s3_key: str) -> dict:
         """
         S3에서 PDF를 불러와 OCR 처리
 
@@ -26,7 +26,10 @@ class OCRUsecase:
         # TODO: 실제 OCR API 호출 구현
         _ = pdf_bytes  # 사용하지 않는 변수 표시
 
-        return {}
+        return {
+            "text": "This is a mocked OCR result.",
+            "pages": 1,
+        }
 
 
 def get_ocr_usecase() -> OCRUsecase:

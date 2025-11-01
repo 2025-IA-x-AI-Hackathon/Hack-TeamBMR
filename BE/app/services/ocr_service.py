@@ -8,7 +8,7 @@ from app.database.mongodb import get_ocr_collection, get_session
 from app.models import OcrBase, OcrDetailResponse, OcrUploadResponse
 from app.repositories import OcrRepository
 from app.services.storage_service import StorageService, get_storage_service
-from app.use_cases.ocr import get_ocr_use_case
+from app.use_cases.ocr.ocr_usecase import get_ocr_usecase
 
 class OcrService:
     def __init__(self, repository: OcrRepository, storage: StorageService) -> None:
@@ -35,13 +35,13 @@ class OcrService:
             content,
             content_type=content_type or "application/octet-stream",
         )
-        ocr_use_case = get_ocr_use_case()
+        ocr_usecase = get_ocr_usecase()
         record = OcrBase(
             ocr_id=ocr_id,
             user_id=user_id,
             report_id=report_id,
             status="done",
-            detail=await ocr_use_case.process(object_key),  # 추후 합치면 제공될 예정!
+            detail=await ocr_usecase.process(object_key),  # 추후 합치면 제공될 예정!
             object_key=object_key,
         )
 
