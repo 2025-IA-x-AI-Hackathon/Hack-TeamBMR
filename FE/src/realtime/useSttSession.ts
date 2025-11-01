@@ -242,7 +242,7 @@ export function useSttSession(): UseSttSessionResult {
       const seen = new Set<string>();
       const unique: SttQaPair[] = [];
       for (const pair of base) {
-        const key = `${pair.q_text}|${pair.a_text}|${pair.a_time}`;
+        const key = JSON.stringify([pair.q_text, pair.a_text, pair.a_time]);
         if (seen.has(key)) {
           continue;
         }
