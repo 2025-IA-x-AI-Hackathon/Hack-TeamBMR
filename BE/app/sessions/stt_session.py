@@ -133,6 +133,10 @@ class STTSession:
             rtc_candidate.sdpMLineIndex,
             candidate_sdp,
         )
+        append_debug_log(
+            self._logs_dir,
+            f"[{self.session_id}] before addIceCandidate mid={rtc_candidate.sdpMid} line={rtc_candidate.sdpMLineIndex}",
+        )
         try:
             await self._pc.addIceCandidate(rtc_candidate)
         except Exception as exc:  # pragma: no cover - diagnostics
