@@ -17,8 +17,17 @@ class STTRepository:
         document = await self._collection.find_one({"_id": room_id}, {"transcript": 1})
         if not document:
             return []
-        raw_segments = document.get("transcript") or []
-        return [TranscriptSegment(**segment) for segment in raw_segments]
+        transcript = document.get("transcript") or []
+
+        if isinstance(transcript, dict):
+            raw_segments = transcript.get("segments") or transcript.get("conversation_segments") or []
+        else:
+            raw_segments = transcript
+
+        if not isinstance(raw_segments, list):
+            return []
+
+        return [TranscriptSegment(**segment) for segment in raw_segments if isinstance(segment, dict)]
 
 
     async def upsert_result(self, result: STTResult) -> None:

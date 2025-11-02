@@ -97,11 +97,9 @@ export interface LlmReport {
   userId?: string;
   status: LlmStage;
   summary?: string;
-  highlights?: string[];
-  recommendations?: string[];
+  cautionPoints?: LlmReportPoint[];
+  goodPoints?: LlmReportPoint[];
   createdAt: string;
-  cautions?: LlmReportItem[];
-  positives?: LlmReportItem[];
   glossary?: LlmReportGlossaryItem[];
 }
 
@@ -115,12 +113,11 @@ export interface SttBubble {
 
 export type LlmReportSeverity = 'high' | 'medium' | 'low' | 'info';
 
-export interface LlmReportItem {
-  id?: string;
+export interface LlmReportPoint {
   title: string;
-  description?: string;
-  detail?: string;
+  detail: string;
   severity?: LlmReportSeverity;
+  kind: 'caution' | 'good';
 }
 
 export interface LlmReportGlossaryItem {

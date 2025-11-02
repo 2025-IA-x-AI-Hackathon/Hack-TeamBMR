@@ -7,7 +7,7 @@ import { fetchAuthToken } from '../api/auth';
 import { api } from '../api/http';
 import type { LlmReport } from '../types/domain';
 
-type ReportState = 'idle' | 'waiting' | 'ready';
+type ReportState = 'idle' | 'waiting' | 'ready' | 'done';
 
 export function RoomMonitoringScreen() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -62,7 +62,7 @@ export function RoomMonitoringScreen() {
     client.connect();
 
     const markReportReady = () => {
-      setReportState((current) => (current === 'idle' ? current : 'ready'));
+      setReportState('ready');
       setToast('AI 종합 리포트가 생성되었습니다!');
     };
 
@@ -132,13 +132,11 @@ export function RoomMonitoringScreen() {
     return finalized.trim();
   }, [bubbles, partial]);
 
-  const isWaitingView = reportState !== 'idle';
-  const reportMessage = reportState === 'ready'
-    ? 'AI가 모든 분석을 완료했어요!'
-    : 'AI가 대화 내용과 서류 모두를 종합적으로 분석하고 있어요';
+  const isWaitingView = reportState === 'waiting';
+  const reportMessage = 'AI가 대화 내용과 서류 모두를 종합적으로 분석하고 있어요';
 
   const handleViewReport = useCallback(() => {
-    if (!roomId || reportState !== 'ready') {
+    if (!roomId || reportState === 'waiting') {
       return;
     }
     navigate(`/rooms/${roomId}/report`);
@@ -149,7 +147,7 @@ export function RoomMonitoringScreen() {
       return;
     }
     try {
-      setReportState('waiting');
+    setReportState('waiting');
       setError(null);
       await fetchAuthToken();
       await api(`/v1/llm/reports/${encodeURIComponent(roomId)}`, { method: 'POST' });
@@ -159,6 +157,35 @@ export function RoomMonitoringScreen() {
       setError(message);
       setReportState('idle');
     }
+  }, [roomId]);
+
+  useEffect(() => {
+    if (!roomId) {
+      return;
+    }
+    let cancelled = false;
+    const checkExistingReport = async () => {
+      try {
+        await fetchAuthToken();
+        const response = await api(`/v1/llm/reports/${encodeURIComponent(roomId)}`);
+        if (cancelled) {
+          return;
+        }
+        if (response.status !== 200) {
+          return;
+        }
+        const payload = await response.json() as { status?: string };
+        if (payload?.status === 'done') {
+          setReportState('done');
+        }
+      } catch {
+        // Ignore background fetch errors
+      }
+    };
+    checkExistingReport();
+    return () => {
+      cancelled = true;
+    };
   }, [roomId]);
 
   return (
@@ -338,10 +365,38 @@ export function RoomMonitoringScreen() {
               type="button"
               className="generate-button"
               onClick={handleViewReport}
-              disabled={reportState !== 'ready'}
+              disabled
             >
               AI 종합 리포트 확인하기
             </button>
+          ) : reportState === 'done' ? (
+            <button
+              type="button"
+              className="generate-button"
+              onClick={handleViewReport}
+              disabled={!roomId}
+            >
+              AI 종합 리포트 확인하기
+            </button>
+          ) : reportState === 'ready' ? (
+            <>
+              <button
+                type="button"
+                className="generate-button"
+                onClick={handleGenerateReport}
+                disabled={!roomId || isCapturing}
+              >
+                AI 종합 리포트 만들기
+              </button>
+              <button
+                type="button"
+                className="upload-button"
+                onClick={handleViewReport}
+                disabled={!roomId}
+              >
+                AI 종합 리포트 확인하기
+              </button>
+            </>
           ) : (
             <>
               <button

@@ -9,12 +9,10 @@ import './LlmReportScreen.css';
 import { fetchLlmReport, normalizeLlmReport } from '../api/llm';
 import type {
   LlmReport,
-  LlmReportItem,
+  LlmReportPoint,
   LlmReportSeverity,
   LlmReportGlossaryItem,
 } from '../types/domain';
-
-type AccordionState = Record<string, boolean>;
 
 const severityLabel: Record<LlmReportSeverity, string> = {
   high: '위험',
@@ -29,7 +27,7 @@ export function LlmReportScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<LlmReport | null>(null);
-  const [expandedItems, setExpandedItems] = useState<AccordionState>({});
+  const [expandedGlossary, setExpandedGlossary] = useState<Record<string, boolean>>({});
 
   const loadReport = useCallback(async () => {
     if (!roomId) {
@@ -74,16 +72,16 @@ export function LlmReportScreen() {
     loadReport();
   }, [loadReport]);
 
-  const handleToggle = (key: string) => {
-    setExpandedItems((prev) => ({
+  const cautionPoints = useMemo(() => report?.cautionPoints ?? [], [report]);
+  const goodPoints = useMemo(() => report?.goodPoints ?? [], [report]);
+  const glossaryItems = useMemo(() => report?.glossary ?? [], [report]);
+
+  const handleGlossaryToggle = (key: string) => {
+    setExpandedGlossary((prev) => ({
       ...prev,
       [key]: !prev[key],
     }));
   };
-
-  const cautionItems = useMemo(() => report?.cautions ?? [], [report]);
-  const positiveItems = useMemo(() => report?.positives ?? [], [report]);
-  const glossaryItems = useMemo(() => report?.glossary ?? [], [report]);
 
   if (loading) {
     return (
@@ -151,38 +149,34 @@ export function LlmReportScreen() {
             <p>{report.summary ?? '전반적으로 확인된 내용을 아래에서 확인해 보세요.'}</p>
           </section>
 
-          {cautionItems.length ? (
+          {cautionPoints.length ? (
             <section>
               <div className="section-heading danger">
                 <span aria-hidden>⚠️</span>
                 <h3>조심해서 봐야 할 부분</h3>
               </div>
               <div className="llm-card-list">
-                {cautionItems.map((item, index) => (
-                  <ReportCard
-                    key={item.id ?? `caution-${index}`}
-                    item={item}
-                    expanded={Boolean(expandedItems[item.id ?? `caution-${index}`])}
-                    onToggle={() => handleToggle(item.id ?? `caution-${index}`)}
+                {cautionPoints.map((point, index) => (
+                  <ReportPointCard
+                    key={`${point.title}-${index}`}
+                    point={point}
                   />
                 ))}
               </div>
             </section>
           ) : null}
 
-          {positiveItems.length ? (
+          {goodPoints.length ? (
             <section>
               <div className="section-heading success">
                 <span aria-hidden>✅</span>
                 <h3>잘 된 부분</h3>
               </div>
               <div className="llm-card-list">
-                {positiveItems.map((item, index) => (
-                  <ReportCard
-                    key={item.id ?? `positive-${index}`}
-                    item={item}
-                    expanded={Boolean(expandedItems[item.id ?? `positive-${index}`])}
-                    onToggle={() => handleToggle(item.id ?? `positive-${index}`)}
+                {goodPoints.map((point, index) => (
+                  <ReportPointCard
+                    key={`${point.title}-${index}`}
+                    point={point}
                   />
                 ))}
               </div>
@@ -200,8 +194,8 @@ export function LlmReportScreen() {
                   <GlossaryItem
                     key={item.id ?? `glossary-${index}`}
                     item={item}
-                    expanded={Boolean(expandedItems[item.id ?? `glossary-${index}`])}
-                    onToggle={() => handleToggle(item.id ?? `glossary-${index}`)}
+                    expanded={Boolean(expandedGlossary[item.id ?? `glossary-${index}`])}
+                    onToggle={() => handleGlossaryToggle(item.id ?? `glossary-${index}`)}
                   />
                 ))}
               </ul>
@@ -227,38 +221,25 @@ export function LlmReportScreen() {
   );
 }
 
-type ReportCardProps = {
-  item: LlmReportItem;
-  expanded: boolean;
-  onToggle: () => void;
+type ReportPointCardProps = {
+  point: LlmReportPoint;
 };
 
-function ReportCard({ item, expanded, onToggle }: ReportCardProps) {
-  const severity: LlmReportSeverity = item.severity ?? 'info';
+function ReportPointCard({ point }: ReportPointCardProps) {
+  const severity: LlmReportSeverity = point.severity ?? 'info';
+  const isCaution = point.kind === 'caution';
   return (
     <article className={`llm-card severity-${severity}`}>
       <div className="llm-card-header">
         <span className="severity-dot" aria-hidden />
         <div>
           <div className="llm-card-title-row">
-            <h4>{item.title}</h4>
-            <span className="llm-card-badge">{severityLabel[severity]}</span>
+            <h4>{point.title}</h4>
+            {isCaution ? <span className="llm-card-badge">{severityLabel[severity]}</span> : null}
           </div>
-          <p>{item.description}</p>
+          <p>{point.detail}</p>
         </div>
       </div>
-      {item.detail ? (
-        <button
-          type="button"
-          className="llm-card-toggle"
-          onClick={onToggle}
-        >
-          {expanded ? '접기' : '자세히 보기'}
-        </button>
-      ) : null}
-      {expanded && item.detail ? (
-        <div className="llm-card-detail">{item.detail}</div>
-      ) : null}
     </article>
   );
 }
