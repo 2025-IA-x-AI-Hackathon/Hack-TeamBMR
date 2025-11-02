@@ -21,6 +21,7 @@ app = FastAPI(
     version="0.1.0",
     debug=settings.debug,
     redirect_slashes=False,
+    docs_url="/docs"
 )
 
 allowed_origins = {
@@ -31,6 +32,7 @@ allowed_origins = {
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(allowed_origins),
+    #allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
