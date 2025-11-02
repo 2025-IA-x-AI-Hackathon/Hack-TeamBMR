@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 from app.database.mongodb import get_rooms_collection, get_session
@@ -39,6 +39,13 @@ class RoomService:
         if not room:
             return None
         return await self._to_response(room)
+
+    async def get_room_checklist(
+        self,
+        user_id: str,
+        room_id: str,
+    ) -> Optional[List[Dict[str, Any]]]:
+        return await self._repository.get_room_checklist(user_id, room_id)
 
     async def delete_room(self, user_id: str, room_id: str) -> bool:
         room = await self._repository.get_room(user_id, room_id)

@@ -1,0 +1,978 @@
+{
+	"title": "중개대상물확인설명서",
+	"type": "object",
+	"properties": {
+		"문서정보": {
+			"type": "object",
+			"properties": {
+				"확인설명근거자료": {
+					"type": "object",
+					"properties": {
+						"등기권리증": {
+							"type": "boolean"
+						},
+						"등기사항증명서": {
+							"type": "boolean"
+						},
+						"토지대장": {
+							"type": "boolean"
+						},
+						"건축물대장": {
+							"type": "boolean"
+						},
+						"지적도": {
+							"type": "boolean"
+						},
+						"임야도": {
+							"type": "boolean"
+						},
+						"토지이용계획확인서": {
+							"type": "boolean"
+						},
+						"기타자료": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				},
+				"계약구분": {
+					"type": "object",
+					"properties": {
+						"단독주택": {
+							"type": "boolean"
+						},
+						"공동주택": {
+							"type": "boolean"
+						},
+						"매매교환": {
+							"type": "boolean"
+						},
+						"임대": {
+							"type": "boolean"
+						}
+					}
+				}
+			}
+		},
+		"개업공인중개사기본확인사항": {
+			"type": "object",
+			"properties": {
+				"대상물건의표시": {
+					"type": "object",
+					"properties": {
+						"토지": {
+							"type": "object",
+							"properties": {
+								"소재지": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"면적": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"지목": {
+									"type": "object",
+									"properties": {
+										"공부상지목": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"실제이용상태": {
+											"type": [
+												"string",
+												"null"
+											]
+										}
+									}
+								}
+							}
+						},
+						"건축물": {
+							"type": "object",
+							"properties": {
+								"전용면적": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"대지지분": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"준공년도": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"증개축년도": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"용도": {
+									"type": "object",
+									"properties": {
+										"건축물대장상용도": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"실제용도": {
+											"type": [
+												"string",
+												"null"
+											]
+										}
+									}
+								},
+								"구조": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"방향": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"내진설계적용여부": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"내진능력": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"위반건축물여부": {
+									"type": [
+										"boolean",
+										"null"
+									]
+								},
+								"위반내용": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						}
+					}
+				},
+				"권리관계": {
+					"type": "object",
+					"properties": {
+						"등기부기재사항": {
+							"type": "object",
+							"properties": {
+								"토지소유권사항": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"토지소유권외권리사항": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"건축물소유권사항": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"건축물소유권외권리사항": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"민간임대등록여부": {
+							"type": "object",
+							"properties": {
+								"장기일반민간임대주택": {
+									"type": "boolean"
+								},
+								"공공지원민간임대주택": {
+									"type": "boolean"
+								},
+								"단기민간임대주택": {
+									"type": "boolean"
+								}
+							}
+						}
+					}
+				},
+				"토지이용계획": {
+					"type": "object",
+					"properties": {
+						"지역지구": {
+							"type": "object",
+							"properties": {
+								"용도지역": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"건폐율상한": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"용적률상한": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"용도지구": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"용도구역": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"도시군계획시설": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"허가신고구역여부": {
+							"type": "object",
+							"properties": {
+								"토지거래허가구역": {
+									"type": "boolean"
+								}
+							}
+						},
+						"투기지역여부": {
+							"type": "object",
+							"properties": {
+								"토지투기지역": {
+									"type": "boolean"
+								},
+								"주택투기지역": {
+									"type": "boolean"
+								},
+								"투기과열지구": {
+									"type": "boolean"
+								}
+							}
+						},
+						"지구단위계획구역": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"기타이용제한및거래규제사항": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				},
+				"입지조건": {
+					"type": "object",
+					"properties": {
+						"도로와의관계": {
+							"type": "object",
+							"properties": {
+								"도로폭": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"포장여부": {
+									"type": [
+										"boolean",
+										"null"
+									]
+								},
+								"접근성": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"대중교통": {
+							"type": "object",
+							"properties": {
+								"버스": {
+									"type": "object",
+									"properties": {
+										"정류장명": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"소요시간": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"이동방식": {
+											"type": [
+												"string",
+												"null"
+											]
+										}
+									}
+								},
+								"지하철": {
+									"type": "object",
+									"properties": {
+										"역명": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"소요시간": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"이동방식": {
+											"type": [
+												"string",
+												"null"
+											]
+										}
+									}
+								}
+							}
+						},
+						"주차장": {
+							"type": "object",
+							"properties": {
+								"없음": {
+									"type": "boolean"
+								},
+								"전용주차시설": {
+									"type": "boolean"
+								},
+								"공동주차시설": {
+									"type": "boolean"
+								},
+								"기타주차시설": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"교육시설": {
+							"type": "object",
+							"properties": {
+								"초등학교": {
+									"type": "object",
+									"properties": {
+										"학교명": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"소요시간": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"이동방식": {
+											"type": [
+												"string",
+												"null"
+											]
+										}
+									}
+								},
+								"중학교": {
+									"type": "object",
+									"properties": {
+										"학교명": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"소요시간": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"이동방식": {
+											"type": [
+												"string",
+												"null"
+											]
+										}
+									}
+								},
+								"고등학교": {
+									"type": "object",
+									"properties": {
+										"학교명": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"소요시간": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"이동방식": {
+											"type": [
+												"string",
+												"null"
+											]
+										}
+									}
+								}
+							}
+						},
+						"판매및의료시설": {
+							"type": "object",
+							"properties": {
+								"백화점및할인매장": {
+									"type": "object",
+									"properties": {
+										"시설명": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"소요시간": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"이동방식": {
+											"type": [
+												"string",
+												"null"
+											]
+										}
+									}
+								},
+								"종합의료시설": {
+									"type": "object",
+									"properties": {
+										"시설명": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"소요시간": {
+											"type": [
+												"string",
+												"null"
+											]
+										},
+										"이동방식": {
+											"type": [
+												"string",
+												"null"
+											]
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				"관리에관한사항": {
+					"type": "object",
+					"properties": {
+						"경비실": {
+							"type": [
+								"boolean",
+								"null"
+							]
+						},
+						"관리주체": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				}
+			}
+		},
+		"개업공인중개사세부확인사항": {
+			"type": "object",
+			"properties": {
+				"비선호시설": {
+					"type": "object",
+					"properties": {
+						"1km이내여부": {
+							"type": "boolean"
+						},
+						"종류및위치": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				},
+				"거래예정금액등": {
+					"type": "object",
+					"properties": {
+						"거래예정금액": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"개별공시지가": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"건물공시가격": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				},
+				"취득시부담할조세": {
+					"type": "object",
+					"properties": {
+						"취득세": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"농어촌특별세": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"지방교육세": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				},
+				"실제권리관계": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"내부외부시설물상태": {
+					"type": "object",
+					"properties": {
+						"수도": {
+							"type": "object",
+							"properties": {
+								"파손여부": {
+									"type": [
+										"boolean",
+										"null"
+									]
+								},
+								"파손위치": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"용수량정상여부": {
+									"type": [
+										"boolean",
+										"null"
+									]
+								},
+								"용수량부족위치": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"전기": {
+							"type": "object",
+							"properties": {
+								"공급상태정상여부": {
+									"type": [
+										"boolean",
+										"null"
+									]
+								},
+								"교체필요부분": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"가스": {
+							"type": "object",
+							"properties": {
+								"공급방식": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"소방": {
+							"type": "object",
+							"properties": {
+								"단독경보형감지기여부": {
+									"type": [
+										"boolean",
+										"null"
+									]
+								},
+								"수량": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"난방방식및연료공급": {
+							"type": "object",
+							"properties": {
+								"공급방식": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"시설작동상태": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"연료종류": {
+									"type": [
+										"string",
+										"null"
+									]
+								},
+								"수선필요사항": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"승강기": {
+							"type": "object",
+							"properties": {
+								"있음": {
+									"type": "boolean"
+								},
+								"상태": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"배수": {
+							"type": "object",
+							"properties": {
+								"정상여부": {
+									"type": [
+										"boolean",
+										"null"
+									]
+								},
+								"수선필요사항": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"기타시설물": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				},
+				"벽면및도배상태": {
+					"type": "object",
+					"properties": {
+						"벽면균열": {
+							"type": "object",
+							"properties": {
+								"있음": {
+									"type": "boolean"
+								},
+								"위치": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"누수": {
+							"type": "object",
+							"properties": {
+								"있음": {
+									"type": "boolean"
+								},
+								"위치": {
+									"type": [
+										"string",
+										"null"
+									]
+								}
+							}
+						},
+						"도배상태": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				},
+				"환경조건": {
+					"type": "object",
+					"properties": {
+						"일조량": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"일조량불충분이유": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"소음": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"진동": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				}
+			}
+		},
+		"중개보수등": {
+			"type": "object",
+			"properties": {
+				"중개보수": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"실비": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"계": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"산출내역": {
+					"type": [
+						"string",
+						"null"
+					]
+				}
+			}
+		},
+		"서명란": {
+			"type": "object",
+			"properties": {
+				"작성일자": {
+					"type": [
+						"string",
+						"null"
+					]
+				},
+				"매도인임대인": {
+					"type": "object",
+					"properties": {
+						"주소": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"성명": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"생년월일": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"전화번호": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				},
+				"매수인임차인": {
+					"type": "object",
+					"properties": {
+						"주소": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"성명": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"생년월일": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"전화번호": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				},
+				"개업공인중개사": {
+					"type": "object",
+					"properties": {
+						"등록번호": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"대표자성명": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"사무소명칭": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"소속공인중개사": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"사무소소재지": {
+							"type": [
+								"string",
+								"null"
+							]
+						},
+						"전화번호": {
+							"type": [
+								"string",
+								"null"
+							]
+						}
+					}
+				}
+			}
+		}
+	}
+}
