@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from motor.motor_asyncio import AsyncIOMotorClientSession, AsyncIOMotorCollection
 
 from app.models import RoomBase, RoomChecklist
+from pydantic import ValidationError
 
 
 class RoomRepository:
@@ -27,6 +28,29 @@ class RoomRepository:
     async def get_room(self, user_id: str, room_id: str) -> Optional[RoomBase]:
         document = await self._collection.find_one({"_id": room_id, "user_id": user_id})
         return self._deserialize(document)
+
+    async def get_room_checklist(
+        self,
+        user_id: str,
+        room_id: str,
+    ) -> Optional[List[Dict[str, Any]]]:
+        document = await self._collection.find_one(
+            {"_id": room_id, "user_id": user_id},
+            {"checklist": 1},
+        )
+        if not document:
+            return None
+
+        raw_checklist = document.get("checklist")
+        if isinstance(raw_checklist, RoomChecklist):
+            return raw_checklist.items
+
+        try:
+            checklist = RoomChecklist.model_validate(raw_checklist or {})
+        except ValidationError:
+            checklist = RoomChecklist()
+
+        return checklist.items
 
     async def list_rooms(self, user_id: str) -> List[RoomBase]:
         cursor = self._collection.find({"user_id": user_id}).sort("created_at", -1)

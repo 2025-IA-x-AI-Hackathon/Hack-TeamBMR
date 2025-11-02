@@ -1,36 +1,52 @@
+from __future__ import annotations
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.responses import JSONResponse
+from starlette.staticfiles import StaticFiles
 
 from app.api import v1_router
-from app.core.config import settings
+from app.core.config import get_settings
+from app.sessions.manager import SessionManager
 
+
+import logging
+
+logger = logging.getLogger(__name__)
+
+settings = get_settings()
 
 app = FastAPI(
-    title="BMR API",
-    description="우리들의 부동산 메이트",
+    title="BMR STT Backend",
     version="0.1.0",
-    debug=settings.DEBUG,
+    debug=settings.debug,
     redirect_slashes=False,
+    docs_url="/docs"
 )
 
-# CORS (프론트-백엔드 분리 배포시 필요)
-origins = [
+allowed_origins = {
     "http://127.0.0.1:3000",
-    settings.FRONTEND_URL,
-]
+    settings.frontend_url,
+}
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=list(allowed_origins),
+    #allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.mount(
+    "/recordings",
+    StaticFiles(directory=settings.storage_dir, html=False),
+    name="recordings",
+)
 
-# 기본 헬스체크 엔드포인트
-@app.get("/", tags=["health"])
-def health_check():
-    return {"msg": "BMR API running!"}
 
+@app.get("/health", tags=["health"])
+async def health_check() -> JSONResponse:
+    return JSONResponse({"status": "ok"})
 
 app.include_router(v1_router)

@@ -12,13 +12,13 @@ class LLMReportTriggerPayload(BaseModel):
 
 
 class LLMReportAck(BaseModel):
-    report_id: str = Field(..., description="Identifier of the report that was queued.")
+    room_id: str = Field(..., description="Identifier of the report that was queued.")
     status: str = Field(..., description="Current state, e.g. 'queued' or 'processing'.")
     user_id: str = Field(..., description="Owner of the report request.")
 
 
 class LLMReportDetail(BaseModel):
-    report_id: str
+    room_id: str
     user_id: str
     status: str
     created_at: datetime

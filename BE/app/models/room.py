@@ -34,7 +34,6 @@ class RoomCreateRequest(BaseModel):
         ge=0,
         description="Monthly maintenance fee if not included.",
     )
-    report_id: Optional[str] = Field(default=None, description="Linked report identifier.")
     checklist: RoomChecklist = Field(
         default_factory=RoomChecklist,
         description="Checklist items and responses for this room.",

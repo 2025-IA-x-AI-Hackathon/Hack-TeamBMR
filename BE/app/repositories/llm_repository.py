@@ -18,7 +18,7 @@ class LlmRepository:
         session: Optional[AsyncIOMotorClientSession] = None,
     ) -> None:
         document = report.model_dump()
-        document["_id"] = document["report_id"] + ":" + document["user_id"]
+        document["_id"] = document["room_id"] + ":" + document["user_id"]
         await self._collection.update_one(
             {"_id": document["_id"]},
             {"$set": document},
@@ -26,8 +26,8 @@ class LlmRepository:
             session=session,
         )
 
-    async def get(self, user_id: str, report_id: str) -> Optional[LLMReportDetail]:
-        document = await self._collection.find_one({"_id": f"{report_id}:{user_id}"})
+    async def get(self, user_id: str, room_id: str) -> Optional[LLMReportDetail]:
+        document = await self._collection.find_one({"_id": f"{room_id}:{user_id}"})
         if not document:
             return None
 

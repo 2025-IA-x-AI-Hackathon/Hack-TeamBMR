@@ -16,12 +16,31 @@ class OcrRepository:
         document["_id"] = document["ocr_id"]
         await self._collection.insert_one(document, session=session)
 
+    async def upsert(self, record: OcrBase, *, session: Optional[AsyncIOMotorClientSession] = None) -> None:
+        if not record.ocr_id:
+            raise ValueError("ocr_id is required for upsert operations.")
+
+        document = record.model_dump(exclude_none=True)
+        ocr_id = document.pop("ocr_id", None)
+        created_at = document.pop("created_at", None)
+
+        update_doc = {"$set": document | {"ocr_id": ocr_id}}
+        if created_at is not None:
+            update_doc["$setOnInsert"] = {"created_at": created_at}
+
+        await self._collection.update_one(
+            {"_id": record.ocr_id},
+            update_doc,
+            upsert=True,
+            session=session,
+        )
+
     async def get(self, user_id: str, ocr_id: str) -> Optional[OcrBase]:
         document = await self._collection.find_one({"_id": ocr_id, "user_id": user_id})
         return self._deserialize(document)
 
-    async def list_by_report(self, user_id: str, report_id: str) -> List[OcrBase]:
-        cursor = self._collection.find({"user_id": user_id, "report_id": report_id}).sort("created_at", -1)
+    async def list_by_room(self, user_id: str, room_id: str) -> List[OcrBase]:
+        cursor = self._collection.find({"user_id": user_id, "room_id": room_id}).sort("created_at", -1)
         records: List[OcrBase] = []
         async for document in cursor:
             record = self._deserialize(document)

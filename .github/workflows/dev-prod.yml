@@ -31,7 +31,7 @@ jobs:
 
             # 1. 변수 설정
             export REPO_DIR=~/teambmr-dev  # EC2 내에 클론된 레포지토리 경로
-            export ENV_FILE_PATH=~/teambmr-dev/.env.backend.prod
+            export ENV_FILE_PATH=~/teambmr-dev/.env.backend.dev
 
             # 2. 레포지토리 설정 (없으면 클론, 있으면 pull)
             if [ ! -d "$REPO_DIR" ]; then

@@ -7,6 +7,7 @@ from .auth import AuthResponse
 from .llm import LLMReportAck, LLMReportDetail, LLMReportTriggerPayload
 from .ocr import OcrBase, OcrDetailResponse, OcrListResponse, OcrUploadResponse
 from .room import RoomBase, RoomChecklist, RoomCreateRequest, RoomDetailResponse, RoomPhoto
+from .stt import QAPair, STTResult, TranscriptPayload, TranscriptSegment
 
 __all__ = [
     "ChecklistResponse",
@@ -25,4 +26,8 @@ __all__ = [
     "RoomCreateRequest",
     "RoomDetailResponse",
     "RoomPhoto",
+    "QAPair",
+    "STTResult",
+    "TranscriptPayload",
+    "TranscriptSegment",
 ]

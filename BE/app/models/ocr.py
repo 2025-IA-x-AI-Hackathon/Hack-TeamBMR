@@ -12,9 +12,13 @@ class OcrBase(BaseModel):
         description="Primary identifier for the OCR record. Generated if omitted.",
     )
     user_id: str = Field(..., description="Owner of the OCR job.")
-    report_id: Optional[str] = Field(
+    room_id: Optional[str] = Field(
         default=None,
         description="Associated report identifier, if any.",
+    )
+    file_type: Optional[str] = Field(
+        default=None,
+        description="계약서/등기부등본 등 파일 타입",
     )
     status: str = Field(..., description="Processing status, e.g. queued, processing, done.")
     created_at: datetime = Field(
@@ -36,9 +40,13 @@ class OcrDetailResponse(BaseModel):
 
     ocr_id: str = Field(..., description="Primary identifier for the OCR record.")
     user_id: str = Field(..., description="Owner of the OCR job.")
-    report_id: Optional[str] = Field(
+    room_id: Optional[str] = Field(
         default=None,
         description="Associated report identifier, if any.",
+    )
+    file_type: Optional[str] = Field(
+        default=None,
+        description="계약서/등기부등본 등 파일 타입",
     )
     status: str = Field(..., description="Processing status, e.g. queued, processing, done.")
     created_at: datetime = Field(..., description="Timestamp when the OCR job was created.")

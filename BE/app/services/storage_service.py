@@ -47,6 +47,28 @@ class StorageService:
 
         await asyncio.to_thread(_upload)
 
+    async def download_bytes(self, key: str) -> bytes:
+        """Download binary content from S3 at the provided key.
+        
+        Args:
+            key: S3 object key to download
+            
+        Returns:
+            bytes: The binary content of the object
+            
+        Raises:
+            botocore.exceptions.ClientError: If the object doesn't exist or access is denied
+        """
+        
+        def _download() -> bytes:
+            response = self._client.get_object(
+                Bucket=self._bucket,
+                Key=key
+            )
+            return response['Body'].read()
+        
+        return await asyncio.to_thread(_download)
+
     async def generate_presigned_url(self, key: str) -> str:
         """Generate a time-bound URL for accessing an object."""
 
