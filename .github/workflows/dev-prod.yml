@@ -1,0 +1,74 @@
+# GitHub Actions 워크플로우 이름
+name: Deploy Backend to EC2
+
+# 트리거 조건: main 브랜치에 push 이벤트가 발생했을 때
+on:
+  push:
+    branches:
+      - dev  # (또는 master 브랜치)
+    paths:
+      - 'BE/**' # BE 디렉터리에 변경이 있을 때만 실행
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest # 실행 환경
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Deploy to EC2
+        # SSH 접속 및 배포 스크립트 실행
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 0. 스크립트 에러 시 중지
+            set -e
+
+            # 1. 변수 설정
+            export REPO_DIR=~/teambmr  # EC2 내에 클론된 레포지토리 경로
+            export ENV_FILE_PATH=~/teambmr/.env.backend.prod
+
+            # 2. 레포지토리 설정 (없으면 클론, 있으면 pull)
+            if [ ! -d "$REPO_DIR" ]; then
+              git clone https://github.com/2025-IA-x-AI-Hackathon/Hack-TeamBMR.git "$REPO_DIR"
+            fi
+            cd "$REPO_DIR"
+            git fetch origin dev
+            git checkout dev
+            git pull origin dev
+
+            # 3. GitHub Secret에서 .env.backend.prod 파일 생성
+            echo "${{ secrets.ENV_BACKEND_PROD }}" > "$ENV_FILE_PATH"
+
+            # 4. 데이터 저장용 디렉터리 생성 (config.py 참고)
+            mkdir -p data/logs
+            mkdir -p data/recordings
+            mkdir -p data/analysis
+
+            # 5. Docker 이미지 빌드 (BE 디렉터리에서)
+            cd BE
+            docker build -t bmr-backend:latest .
+
+            # 6. 기존 컨테이너 중지 및 제거
+            docker stop bmr-backend-prod || true
+            docker rm bmr-backend-prod || true
+
+            # 7. 새 Docker 컨테이너 실행
+            # (볼륨 경로는 REPO_DIR 기준으로 절대 경로를 사용합니다)
+            docker run -d \
+              -p 8080:8080 \
+              --name bmr-backend-prod \
+              --restart unless-stopped \
+              --env-file "$ENV_FILE_PATH" \
+              -v "$REPO_DIR/data/logs:/app/data/logs" \
+              -v "$REPO_DIR/data/recordings:/app/data/recordings" \
+              -v "$REPO_DIR/data/analysis:/app/data/analysis" \
+              bmr-backend:latest
+
+            # 8. (선택) 사용하지 않는 Docker 이미지 정리
+            docker image prune -f
