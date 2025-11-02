@@ -2,6 +2,7 @@
 ### AI 부동산 메이트랑: https://bmr.minjacho.com/
 
 ![부메랑 로고](https://img.shields.io/badge/부메랑-AI%20부동산%20메이트-blue?style=for-the-badge)
+github 내부의 계약서, 중개대상물확인서, 등기사항전부증명서 등 참고
 
 ## 🎯 프로젝트 개요
 
