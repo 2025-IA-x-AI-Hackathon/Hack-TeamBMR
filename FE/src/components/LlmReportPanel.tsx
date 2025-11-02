@@ -6,31 +6,12 @@ import {
   useRef,
   useState,
 } from 'react';
-import { fetchLlmReport, triggerLlmReport } from '../api/llm';
+import { fetchLlmReport, normalizeLlmReport, triggerLlmReport } from '../api/llm';
 import type { LlmReport } from '../types/domain';
 import { getRealtimeClient } from '../realtime/ws';
 import type { LlmErrorPayload, LlmProgressPayload } from '../realtime/stt.types';
 
 type LlmStatus = 'idle' | 'triggering' | 'processing' | 'done' | 'error';
-
-function normalizeLlmReport(raw: Partial<LlmReport> & {
-  room_id?: string;
-  report_id?: string;
-  status?: string;
-  summary?: string;
-  highlights?: string[];
-  recommendations?: string[];
-}): LlmReport {
-  return {
-    roomId: raw.roomId ?? raw.room_id ?? raw.reportId ?? raw.report_id ?? '',
-    reportId: raw.reportId ?? raw.report_id ?? undefined,
-    status: (raw.status as LlmReport['status']) ?? 'done',
-    summary: raw.summary ?? '',
-    highlights: raw.highlights ?? [],
-    recommendations: raw.recommendations ?? [],
-    createdAt: raw.createdAt ?? new Date().toISOString(),
-  };
-}
 
 export function LlmReportPanel() {
   const client = useMemo(() => getRealtimeClient(), []);
@@ -41,6 +22,8 @@ export function LlmReportPanel() {
   const [report, setReport] = useState<LlmReport | null>(null);
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const activeRoomIdRef = useRef<string | null>(null);
+  const [expandedPoints, setExpandedPoints] = useState<Record<string, boolean>>({});
+  const [expandedGlossary, setExpandedGlossary] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     client.connect();
@@ -86,9 +69,11 @@ export function LlmReportPanel() {
         }
 
         if (response.status === 200) {
-          const payload = await response.json() as LlmReport;
+          const payload = await response.json();
           const normalized = normalizeLlmReport(payload);
           setReport(normalized);
+          setExpandedPoints({});
+          setExpandedGlossary({});
           setStatus('done');
           setProgressStage('완료');
           return;
@@ -136,7 +121,7 @@ export function LlmReportPanel() {
     });
 
     const unsubscribeResult = client.subscribe('llm.result', (payload) => {
-      const normalized = normalizeLlmReport(payload as LlmReport);
+      const normalized = normalizeLlmReport(payload);
       const normalizedRoomId = normalized.roomId || normalized.reportId || null;
       if (activeRoomIdRef.current && normalizedRoomId && normalizedRoomId !== activeRoomIdRef.current) {
         return;
@@ -144,6 +129,8 @@ export function LlmReportPanel() {
       activeRoomIdRef.current = normalizedRoomId;
       setActiveRoomId(normalizedRoomId);
       setReport(normalized);
+      setExpandedPoints({});
+      setExpandedGlossary({});
       setStatus('done');
       setProgressStage('완료');
     });
@@ -204,31 +191,145 @@ export function LlmReportPanel() {
       {error ? <div className="error-text">{error}</div> : null}
 
       {report ? (
-        <div className="llm-report">
-          <h3>요약</h3>
-          <p>{report.summary ?? '요약이 없습니다.'}</p>
+        <div className="llm-preview">
+          <div className="llm-preview-shell">
+            <header className="llm-preview-header">
+              <h3>대화 내용과 서류를 같이 살펴봤어요.</h3>
+              <p>{report.summary ?? '전반적으로 확인된 내용을 아래에서 확인해 주세요.'}</p>
+            </header>
 
-          {report.highlights?.length ? (
-            <>
-              <h4>주요 사항</h4>
-              <ul>
-                {report.highlights.map((highlight, index) => (
-                  <li key={index.toString()}>{highlight}</li>
-                ))}
-              </ul>
-            </>
-          ) : null}
+            {report.cautionPoints?.length ? (
+              <section className="llm-preview-section caution">
+                <div className="llm-preview-section-title">
+                  <span role="img" aria-hidden>⚠️</span>
+                  <div>
+                    <h4>조심해서 봐야 할 부분</h4>
+                    <p>바로잡아야 할 위험 신호를 먼저 점검해 주세요.</p>
+                  </div>
+                </div>
+                <div className="llm-preview-points">
+                  {report.cautionPoints.map((point, index) => {
+                    const key = `caution-${index}`;
+                    const expanded = expandedPoints[key];
+                    return (
+                      <article key={key} className={`llm-preview-point severity-${point.severity ?? 'info'}`}>
+                        <div className="llm-preview-point-heading">
+                          <div className="llm-preview-point-left">
+                            <span className={`llm-preview-dot severity-${point.severity ?? 'info'}`} aria-hidden />
+                            <span className="llm-preview-point-title">{point.title}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="llm-preview-toggle"
+                            onClick={() => setExpandedPoints((prev) => ({
+                              ...prev,
+                              [key]: !prev[key],
+                            }))}
+                          >
+                            {expanded ? '접기' : '자세히 보기'}
+                          </button>
+                        </div>
+                        {expanded ? (
+                          <p className="llm-preview-point-detail">{point.detail}</p>
+                        ) : null}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
 
-          {report.recommendations?.length ? (
-            <>
-              <h4>추천 사항</h4>
-              <ol>
-                {report.recommendations.map((recommendation, index) => (
-                  <li key={index.toString()}>{recommendation}</li>
-                ))}
-              </ol>
-            </>
-          ) : null}
+            {report.goodPoints?.length ? (
+              <section className="llm-preview-section good">
+                <div className="llm-preview-section-title">
+                  <span role="img" aria-hidden>✅</span>
+                  <div>
+                    <h4>잘 된 부분</h4>
+                    <p>그대로 이어가면 좋은 포인트들이에요.</p>
+                  </div>
+                </div>
+                <div className="llm-preview-points">
+                  {report.goodPoints.map((point, index) => {
+                    const key = `good-${index}`;
+                    const expanded = expandedPoints[key];
+                    return (
+                      <article key={key} className={`llm-preview-point good severity-${point.severity ?? 'info'}`}>
+                        <div className="llm-preview-point-heading">
+                          <div className="llm-preview-point-left">
+                            <span className={`llm-preview-dot severity-${point.severity ?? 'info'}`} aria-hidden />
+                            <span className="llm-preview-point-title">{point.title}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className="llm-preview-toggle"
+                            onClick={() => setExpandedPoints((prev) => ({
+                              ...prev,
+                              [key]: !prev[key],
+                            }))}
+                          >
+                            {expanded ? '접기' : '자세히 보기'}
+                          </button>
+                        </div>
+                        {expanded ? (
+                          <p className="llm-preview-point-detail">{point.detail}</p>
+                        ) : null}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
+
+            {report.glossary?.length ? (
+              <section className="llm-preview-section glossary">
+                <div className="llm-preview-section-title">
+                  <span role="img" aria-hidden>📘</span>
+                  <div>
+                    <h4>부동산 용어 알아보기</h4>
+                    <p>문서에 함께 등장한 용어도 차근히 정리했어요.</p>
+                  </div>
+                </div>
+                <div className="llm-preview-accordion">
+                  {report.glossary.map((item, index) => {
+                    const key = item.id ?? `glossary-${index}`;
+                    const expanded = expandedGlossary[key];
+                    return (
+                      <article key={key} className="llm-preview-accordion-item">
+                        <button
+                          type="button"
+                          className="llm-preview-accordion-trigger"
+                          onClick={() => setExpandedGlossary((prev) => ({
+                            ...prev,
+                            [key]: !prev[key],
+                          }))}
+                        >
+                          <span>{item.term}</span>
+                          <span aria-hidden>{expanded ? '﹀' : '﹂'}</span>
+                        </button>
+                        {expanded ? (
+                          <p className="llm-preview-accordion-body">{item.description}</p>
+                        ) : null}
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
+
+            <footer className="llm-preview-footer">
+              <button
+                type="button"
+                className="llm-preview-home"
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/home';
+                  }
+                }}
+              >
+                홈으로 돌아가기
+              </button>
+            </footer>
+          </div>
         </div>
       ) : null}
     </div>
