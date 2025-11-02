@@ -61,7 +61,7 @@ jobs:
             # 7. 새 Docker 컨테이너 실행
             # (볼륨 경로는 REPO_DIR 기준으로 절대 경로를 사용합니다)
             docker run -d \
-              -p 8080:8080 \
+              -p 8181:8080 \
               --name bmr-backend-dev-prod \
               --restart unless-stopped \
               --env-file "$ENV_FILE_PATH" \
