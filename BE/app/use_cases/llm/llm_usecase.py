@@ -7,12 +7,19 @@ import anyio
 from fastapi import HTTPException
 
 from app.use_cases.llm.crew_pipeline import run_real_estate_agent
+from app.models.checklist import build_default_checklist_items
 
 
 class LLMUsecase:
-    async def process(self, stt_details: List[Dict[str, Any]], ocr_details: List[Dict[str, Any]]) -> Dict[str, Any]:
+    async def process(
+        self,
+        stt_details: List[Dict[str, Any]],
+        ocr_details: List[Dict[str, Any]],
+        checklist_details: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
         segments = self._extract_conversation_segments(stt_details, ocr_details)
         contract = self._extract_contract_json(ocr_details)
+        checklist_payload = self._build_checklist_payload(checklist_details)
 
         stt_payload: List[Dict[str, Any]] = segments
         ocr_payload = self._build_ocr_payload(ocr_details, contract)
@@ -21,6 +28,7 @@ class LLMUsecase:
             run_real_estate_agent,
             stt_payload,
             ocr_payload,
+            checklist_payload,
         )
 
         if isinstance(result, dict):
@@ -84,6 +92,49 @@ class LLMUsecase:
             payload.append({"contract_json": contract})
         return payload
 
+    def _build_checklist_payload(self, checklist_details: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        payload: List[Dict[str, Any]] = []
+        for detail in checklist_details or []:
+            if not isinstance(detail, dict):
+                continue
+
+            items = None
+            if "items" in detail:
+                items = self._extract_checklist_items(detail["items"])
+            elif "checklist" in detail:
+                items = self._extract_checklist_items(detail["checklist"])
+            else:
+                items = self._extract_checklist_items(detail)
+
+            if not items:
+                continue
+
+            entry: Dict[str, Any] = {"items": items}
+            room_id = detail.get("room_id")
+            if isinstance(room_id, str):
+                entry["room_id"] = room_id
+            payload.append(entry)
+
+        if not payload:
+            payload.append({"items": build_default_checklist_items()})
+
+        return payload
+
+    def _extract_checklist_items(self, raw: Any) -> List[Dict[str, Any]] | None:
+        decoded = self._decode_if_json(raw)
+        if isinstance(decoded, dict):
+            decoded = decoded.get("items")
+
+        if not isinstance(decoded, list):
+            return None
+
+        normalized: List[Dict[str, Any]] = []
+        for entry in decoded:
+            if isinstance(entry, dict):
+                normalized.append(entry)
+
+        return normalized or None
+
     @staticmethod
     def _decode_if_json(value: Any) -> Any:
         if isinstance(value, str):
@@ -97,7 +148,11 @@ class LLMUsecase:
         if not isinstance(container, dict):
             return None
 
-        segments = container.get("segments") or container.get("conversation_segments")
+        segments = (
+            container.get("segments")
+            or container.get("conversation_segments")
+            or container.get("transcript")
+        )
         segments = self._decode_if_json(segments)
         if not isinstance(segments, list):
             return None
@@ -109,11 +164,19 @@ class LLMUsecase:
             text = (segment.get("text") or segment.get("utterance") or "").strip()
             if not text:
                 continue
+            t0 = segment.get("t0")
+            t1 = segment.get("t1")
+            if t0 is None:
+                t0 = segment.get("start")
+            if t1 is None:
+                t1 = segment.get("end")
             normalized.append(
                 {
                     "text": text,
-                    "t0": segment.get("t0"),
-                    "t1": segment.get("t1"),
+                    "t0": t0,
+                    "t1": t1,
+                    "speaker": segment.get("speaker"),
+                    "segment_key": segment.get("segment_key"),
                 }
             )
 

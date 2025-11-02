@@ -7,8 +7,10 @@ from app.database.mongodb import get_llm_collection, get_session
 from app.models import LLMReportAck, LLMReportDetail, LLMReportTriggerPayload
 from app.repositories import LlmRepository
 from app.services.ocr_service import get_ocr_service
+from app.services.stt_service import get_stt_service
 from app.use_cases.llm.llm_usecase import get_llm_usecase
 from app.services.room_service import get_room_service
+from app.services.stt_service import get_stt_service
 
 
 class LlmService:
@@ -46,10 +48,16 @@ class LlmService:
     ) -> LLMReportDetail:
         llm_usecase = get_llm_usecase()
         ocr_service = get_ocr_service()
+        stt_service = get_stt_service()
         room_service = get_room_service()
+        stt_service = get_stt_service()
 
-        stt_details: List[Dict[str, Any]] = []
+        stt_details: List[Dict[str, Any]] = await stt_service.get_transcript_triplets(room_id)
         ocr_details: List[Dict[str, Any]] = await ocr_service.list_details(user_id, room_id)
+        room_checklist: Optional[List[Dict[str, Any]]] = await room_service.get_room_checklist(user_id, room_id)
+        checklist_details: List[Dict[str, Any]] = []
+        if room_checklist:
+            checklist_details.append({"room_id": room_id, "items": room_checklist})
 
         # MVP fallback: synthesise a completed report when not found.
         report = LLMReportDetail(
@@ -57,7 +65,7 @@ class LlmService:
             user_id=user_id,
             status="done",
             created_at=datetime.now(UTC),
-            detail=await llm_usecase.process(stt_details, ocr_details),
+            detail=await llm_usecase.process(stt_details, ocr_details, checklist_details),
         )
         return report
 

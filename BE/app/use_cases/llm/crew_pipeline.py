@@ -80,10 +80,39 @@ def _collect_contract(details: Sequence[Dict[str, Any]]) -> Dict[str, Any]:
     return contract
 
 
+def _collect_checklists(details: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    checklists: List[Dict[str, Any]] = []
+    for detail in details or []:
+        if not isinstance(detail, dict):
+            continue
+        payload: Dict[str, Any] = {}
+        if "room_id" in detail:
+            payload["room_id"] = detail["room_id"]
+
+        items = detail.get("items") or detail.get("checklist")
+        if isinstance(items, str):
+            try:
+                decoded = json.loads(items)
+            except json.JSONDecodeError:
+                decoded = None
+            if isinstance(decoded, list):
+                items = decoded
+        if isinstance(items, list):
+            payload["items"] = items
+        if payload:
+            checklists.append(payload)
+    return checklists
+
+
 # ---- Crew 실행 ----
-def run_real_estate_agent(stt_details: List[Dict[str, Any]], ocr_details: List[Dict[str, Any]]) -> Any:
+def run_real_estate_agent(
+    stt_details: List[Dict[str, Any]],
+    ocr_details: List[Dict[str, Any]],
+    checklist_details: List[Dict[str, Any]],
+) -> Any:
     segments = _collect_segments(stt_details)
     contract = _collect_contract(ocr_details)
+    checklists = _collect_checklists(checklist_details)
 
     config = _load_config("crew_config.yaml")
     agents = _build_agents(config)
@@ -101,6 +130,7 @@ def run_real_estate_agent(stt_details: List[Dict[str, Any]], ocr_details: List[D
     inputs = {
         "conversation_segments": json.dumps(segments, ensure_ascii=False),
         "contract_json": json.dumps(contract, ensure_ascii=False),
+        "checklist_json": json.dumps(checklists, ensure_ascii=False),
     }
 
     result = crew.kickoff(inputs=inputs)
