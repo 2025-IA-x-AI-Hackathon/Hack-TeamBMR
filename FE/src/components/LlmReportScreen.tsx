@@ -14,19 +14,13 @@ import type {
   LlmReportGlossaryItem,
 } from '../types/domain';
 
-const severityLabel: Record<LlmReportSeverity, string> = {
-  high: '위험',
-  medium: '주의',
-  low: '참고',
-  info: '정보',
-};
-
 export function LlmReportScreen() {
   const { roomId } = useParams<{ roomId: string}>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [report, setReport] = useState<LlmReport | null>(null);
+  const [expandedPoints, setExpandedPoints] = useState<Record<string, boolean>>({});
   const [expandedGlossary, setExpandedGlossary] = useState<Record<string, boolean>>({});
 
   const loadReport = useCallback(async () => {
@@ -60,6 +54,8 @@ export function LlmReportScreen() {
         return;
       }
       setReport(data);
+      setExpandedPoints({});
+      setExpandedGlossary({});
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : 'AI 리포트를 불러오지 못했습니다.';
       setError(message);
@@ -144,61 +140,104 @@ export function LlmReportScreen() {
         </header>
 
         <main className="llm-content">
-          <section className="llm-intro">
+          <section className="llm-summary">
             <h2>대화 내용과 서류를 같이 살펴봤어요.</h2>
-            <p>{report.summary ?? '전반적으로 확인된 내용을 아래에서 확인해 보세요.'}</p>
+            <p>{report.summary ?? '전반적으로 큰 문제는 없지만, 조심해서 보면 좋은 부분 몇 가지를 확인했어요.'}</p>
           </section>
 
           {cautionPoints.length ? (
-            <section>
-              <div className="section-heading danger">
-                <span aria-hidden>⚠️</span>
-                <h3>조심해서 봐야 할 부분</h3>
-              </div>
-              <div className="llm-card-list">
-                {cautionPoints.map((point, index) => (
-                  <ReportPointCard
-                    key={`${point.title}-${index}`}
-                    point={point}
-                  />
-                ))}
+            <section className="llm-section">
+              <header className="llm-section-title">
+                <span className="llm-section-icon" aria-hidden>
+                  <svg className="llm-icon llm-icon-caution" viewBox="0 0 24 24">
+                    <path d="M12 3 1 21h22L12 3Zm0 6c.55 0 1 .45 1 1v5a1 1 0 1 1-2 0v-5c0-.55.45-1 1-1Zm0 10.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5Z" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>조심해서 봐야 할 부분</h3>
+                  <p>바로잡아야 할 위험 신호를 먼저 점검해 주세요.</p>
+                </div>
+              </header>
+              <div className="llm-point-list">
+                {cautionPoints.map((point, index) => {
+                  const key = `caution-${index}`;
+                  const expanded = expandedPoints[key] ?? false;
+                  return (
+                    <ReportPointCard
+                      key={key}
+                      point={point}
+                      expanded={expanded}
+                      onToggle={() => setExpandedPoints((prev) => ({
+                        ...prev,
+                        [key]: !prev[key],
+                      }))}
+                    />
+                  );
+                })}
               </div>
             </section>
           ) : null}
 
           {goodPoints.length ? (
-            <section>
-              <div className="section-heading success">
-                <span aria-hidden>✅</span>
-                <h3>잘 된 부분</h3>
-              </div>
-              <div className="llm-card-list">
-                {goodPoints.map((point, index) => (
-                  <ReportPointCard
-                    key={`${point.title}-${index}`}
-                    point={point}
-                  />
-                ))}
+            <section className="llm-section">
+              <header className="llm-section-title">
+                <span className="llm-section-icon" aria-hidden>
+                  <svg className="llm-icon llm-icon-good" viewBox="0 0 24 24">
+                    <path d="m9.2 17.6-5.3-5.3 1.4-1.4 3.9 3.9 9.7-9.7 1.4 1.4-11.1 11.1Z" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>잘 된 부분</h3>
+                  <p>그대로 이어가면 좋은 포인트들이에요.</p>
+                </div>
+              </header>
+              <div className="llm-point-list">
+                {goodPoints.map((point, index) => {
+                  const key = `good-${index}`;
+                  const expanded = expandedPoints[key] ?? false;
+                  return (
+                    <ReportPointCard
+                      key={key}
+                      point={point}
+                      expanded={expanded}
+                      onToggle={() => setExpandedPoints((prev) => ({
+                        ...prev,
+                        [key]: !prev[key],
+                      }))}
+                    />
+                  );
+                })}
               </div>
             </section>
           ) : null}
 
           {glossaryItems.length ? (
-            <section className="llm-glossary">
-              <div className="glossary-heading">
-                <span aria-hidden>📘</span>
-                <h3>부동산 용어 알아보기</h3>
+            <section className="llm-section">
+              <header className="llm-section-title">
+                <span className="llm-section-icon" aria-hidden>
+                  <svg className="llm-icon llm-icon-glossary" viewBox="0 0 24 24">
+                    <path d="M5 4c-1.1 0-2 .9-2 2v13h2.5c1.1 0 2 .9 2 2h11.5V6c0-1.1-.9-2-2-2H5Zm2.5 15H5V6h2.5c.28 0 .5.22.5.5v12c0 .28-.22.5-.5.5ZM9 5h8.5c.28 0 .5.22.5.5V20h-8v-1h5v-2h-5V5Z" />
+                  </svg>
+                </span>
+                <div>
+                  <h3>부동산 용어 알아보기</h3>
+                  <p>문서에 함께 등장한 용어도 차근히 정리했어요.</p>
+                </div>
+              </header>
+              <div className="llm-glossary-list">
+                {glossaryItems.map((item, index) => {
+                  const key = item.id ?? `glossary-${index}`;
+                  const expanded = expandedGlossary[key] ?? false;
+                  return (
+                    <GlossaryItem
+                      key={key}
+                      item={item}
+                      expanded={expanded}
+                      onToggle={() => handleGlossaryToggle(key)}
+                    />
+                  );
+                })}
               </div>
-              <ul>
-                {glossaryItems.map((item, index) => (
-                  <GlossaryItem
-                    key={item.id ?? `glossary-${index}`}
-                    item={item}
-                    expanded={Boolean(expandedGlossary[item.id ?? `glossary-${index}`])}
-                    onToggle={() => handleGlossaryToggle(item.id ?? `glossary-${index}`)}
-                  />
-                ))}
-              </ul>
             </section>
           ) : null}
         </main>
@@ -223,23 +262,37 @@ export function LlmReportScreen() {
 
 type ReportPointCardProps = {
   point: LlmReportPoint;
+  expanded: boolean;
+  onToggle: () => void;
 };
 
-function ReportPointCard({ point }: ReportPointCardProps) {
+function ReportPointCard({ point, expanded, onToggle }: ReportPointCardProps) {
   const severity: LlmReportSeverity = point.severity ?? 'info';
   const isCaution = point.kind === 'caution';
+  const hasDetail = Boolean(point.detail);
   return (
-    <article className={`llm-card severity-${severity}`}>
-      <div className="llm-card-header">
-        <span className="severity-dot" aria-hidden />
-        <div>
-          <div className="llm-card-title-row">
-            <h4>{point.title}</h4>
-            {isCaution ? <span className="llm-card-badge">{severityLabel[severity]}</span> : null}
-          </div>
-          <p>{point.detail}</p>
+    <article className={`llm-point-card severity-${severity}${point.kind === 'good' ? ' is-good' : ''}${expanded ? ' expanded' : ''}`}>
+      <div className="llm-point-header">
+        <div className="llm-point-left">
+          <span className={`llm-point-dot severity-${severity}`} aria-hidden />
+          <span className="llm-point-title">{point.title}</span>
         </div>
+        {hasDetail ? (
+          <button
+            type="button"
+            className={`llm-point-toggle${expanded ? ' expanded' : ''}`}
+            onClick={onToggle}
+          >
+            <span>{expanded ? '접기' : '자세히 보기'}</span>
+            <svg className="llm-point-toggle-icon" viewBox="0 0 16 16" aria-hidden>
+              <path d="m4 6 4 4 4-4" />
+            </svg>
+          </button>
+        ) : null}
       </div>
+      {hasDetail && expanded ? (
+        <p className={`llm-point-detail${isCaution ? ' caution' : ''}`}>{point.detail}</p>
+      ) : null}
     </article>
   );
 }
@@ -252,18 +305,20 @@ type GlossaryItemProps = {
 
 function GlossaryItem({ item, expanded, onToggle }: GlossaryItemProps) {
   return (
-    <li className="glossary-item">
+    <article className={`llm-accordion-item${expanded ? ' expanded' : ''}`}>
       <button
         type="button"
         onClick={onToggle}
-        className="glossary-trigger"
+        className={`llm-accordion-trigger${expanded ? ' expanded' : ''}`}
       >
         <span>{item.term}</span>
-        <span aria-hidden>{expanded ? '﹀' : '﹂'}</span>
+        <svg className="llm-accordion-icon" viewBox="0 0 16 16" aria-hidden>
+          <path d="m4 6 4 4 4-4" />
+        </svg>
       </button>
       {expanded ? (
-        <div className="glossary-body">{item.description}</div>
+        <p className="llm-accordion-body">{item.description}</p>
       ) : null}
-    </li>
+    </article>
   );
 }

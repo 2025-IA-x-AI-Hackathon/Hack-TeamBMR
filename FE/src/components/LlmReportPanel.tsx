@@ -201,7 +201,9 @@ export function LlmReportPanel() {
             {report.cautionPoints?.length ? (
               <section className="llm-preview-section caution">
                 <div className="llm-preview-section-title">
-                  <span role="img" aria-hidden>⚠️</span>
+                  <span className="llm-preview-icon" aria-hidden>
+                    <img src="alert.svg" alt="" />
+                  </span>
                   <div>
                     <h4>조심해서 봐야 할 부분</h4>
                     <p>바로잡아야 할 위험 신호를 먼저 점검해 주세요.</p>
@@ -242,7 +244,9 @@ export function LlmReportPanel() {
             {report.goodPoints?.length ? (
               <section className="llm-preview-section good">
                 <div className="llm-preview-section-title">
-                  <span role="img" aria-hidden>✅</span>
+                  <span className="llm-preview-icon" aria-hidden>
+                    <img src="check.svg" alt="" />
+                  </span>
                   <div>
                     <h4>잘 된 부분</h4>
                     <p>그대로 이어가면 좋은 포인트들이에요.</p>
@@ -283,7 +287,9 @@ export function LlmReportPanel() {
             {report.glossary?.length ? (
               <section className="llm-preview-section glossary">
                 <div className="llm-preview-section-title">
-                  <span role="img" aria-hidden>📘</span>
+                  <span role="img" aria-hidden>
+                    <img src="info.svg" alt="" />
+                  </span>
                   <div>
                     <h4>부동산 용어 알아보기</h4>
                     <p>문서에 함께 등장한 용어도 차근히 정리했어요.</p>
