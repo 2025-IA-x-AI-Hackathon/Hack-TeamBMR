@@ -1,5 +1,5 @@
 # 🏠 부메랑 (Boomerang)
-### AI 부동산 메이트랑
+### AI 부동산 메이트랑: https://bmr.minjacho.com/
 
 ![부메랑 로고](https://img.shields.io/badge/부메랑-AI%20부동산%20메이트-blue?style=for-the-badge)
 
