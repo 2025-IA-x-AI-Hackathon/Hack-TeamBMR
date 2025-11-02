@@ -1,0 +1,124 @@
+{
+	"title": "등기사항전부증명서",
+	"type": "object",
+	"properties": {
+		"문서정보": {
+			"type": "object",
+			"properties": {
+				"고유번호": {
+					"type": "string"
+				},
+				"발급일자": {
+					"type": "string"
+				},
+				"발급기관": {
+					"type": "string"
+				}
+			}
+		},
+		"표제부": {
+			"type": "object",
+			"properties": {
+				"부동산기본정보": {
+					"type": "object",
+					"properties": {
+						"소재지": {
+							"type": "string"
+						},
+						"지번": {
+							"type": "string"
+						},
+						"지목": {
+							"type": "string"
+						},
+						"면적": {
+							"type": "string"
+						}
+					}
+				},
+				"건물정보": {
+					"type": "object",
+					"properties": {
+						"구조": {
+							"type": "string"
+						},
+						"용도": {
+							"type": "string"
+						},
+						"층수": {
+							"type": "string"
+						},
+						"건축년월일": {
+							"type": "string"
+						},
+						"면적": {
+							"type": "string"
+						}
+					}
+				}
+			}
+		},
+		"갑구": {
+			"type": "object",
+			"properties": {
+				"소유권사항": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"순위번호": {
+								"type": "string"
+							},
+							"등기목적": {
+								"type": "string"
+							},
+							"접수일자": {
+								"type": "string"
+							},
+							"접수번호": {
+								"type": "string"
+							},
+							"권리자및기타사항": {
+								"type": "string"
+							}
+						}
+					}
+				}
+			}
+		},
+		"을구": {
+			"type": "object",
+			"properties": {
+				"권리사항": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"순위번호": {
+								"type": "string"
+							},
+							"등기목적": {
+								"type": "string"
+							},
+							"접수일자": {
+								"type": "string"
+							},
+							"접수번호": {
+								"type": "string"
+							},
+							"권리자및기타사항": {
+								"type": "string"
+							},
+							"금액": {
+								"type": "string"
+							},
+							"권리종류": {
+								"type": "string"
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
