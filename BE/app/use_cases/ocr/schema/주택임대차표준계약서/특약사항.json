@@ -1,0 +1,13 @@
+{
+	"title": "주택임대차표준계약서_특약사항",
+	"type": "object",
+	"properties": {
+		"세부사항": {
+			"type": "array",
+			"items": {
+				"type": "string"
+			},
+			"default": []
+		}
+	}
+}

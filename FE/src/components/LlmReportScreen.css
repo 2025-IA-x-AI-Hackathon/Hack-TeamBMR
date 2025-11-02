@@ -1,0 +1,382 @@
+.llm-root {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #ffffff;
+  padding: 48px 24px;
+  font-family: 'Pretendard', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #111111;
+}
+
+.llm-device {
+  position: relative;
+  width: 402px;
+  height: 874px;
+  background: #fffbf7;
+  border-radius: 48px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  overflow: hidden;
+  transform: scale(0.8);
+  transform-origin: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.llm-status-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 21px 16px 19px;
+  background: #ffffff;
+}
+
+.llm-time {
+  font-family: 'SF Pro', 'Pretendard', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  width: 108px;
+  text-align: center;
+}
+
+.llm-levels {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 108px;
+  justify-content: center;
+  color: #000000;
+}
+
+.llm-header {
+  position: absolute;
+  top: 78px;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 24px;
+}
+
+.llm-header h1 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.back-button {
+  position: absolute;
+  left: 24px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.back-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  width: 8px;
+  height: 8px;
+  border-left: 2px solid #000000;
+  border-bottom: 2px solid #000000;
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.llm-content {
+  position: absolute;
+  top: 140px;
+  left: 0;
+  right: 0;
+  bottom: 140px;
+  padding: 0 28px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.llm-intro h2 {
+  margin: 0 0 10px;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.llm-intro p {
+  margin: 0;
+  color: #4d4d4d;
+  line-height: 1.5;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.section-heading h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.section-heading.danger span {
+  color: #dc2626;
+}
+
+.section-heading.success span {
+  color: #16a34a;
+}
+
+.llm-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.llm-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: 0 12px 22px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.llm-card-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.llm-card-header h4 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.llm-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.llm-card-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.08);
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.llm-card-header p {
+  margin: 0;
+  font-size: 14px;
+  color: #4d4d4d;
+  line-height: 1.5;
+}
+
+.severity-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-top: 4px;
+}
+
+.severity-high .severity-dot {
+  background: #ef4444;
+}
+
+.severity-medium .severity-dot {
+  background: #facc15;
+}
+
+.severity-low .severity-dot {
+  background: #f97316;
+}
+
+.severity-info .severity-dot {
+  background: #3b82f6;
+}
+
+.llm-card-toggle {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.llm-card-detail {
+  background: rgba(37, 99, 235, 0.08);
+  border-radius: 14px;
+  padding: 14px 16px;
+  font-size: 14px;
+  color: #1f2937;
+  line-height: 1.5;
+}
+
+.llm-card.severity-high {
+  border-left: 6px solid #ef4444;
+}
+
+.llm-card.severity-medium {
+  border-left: 6px solid #facc15;
+}
+
+.llm-card.severity-low {
+  border-left: 6px solid #f97316;
+}
+
+.llm-card.severity-info {
+  border-left: 6px solid #3b82f6;
+}
+
+.llm-glossary ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.glossary-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.glossary-heading h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.glossary-item {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.1);
+  overflow: hidden;
+}
+
+.glossary-trigger {
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 16px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.glossary-body {
+  padding: 0 20px 16px;
+  color: #4d4d4d;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.llm-actions {
+  position: absolute;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 360px;
+}
+
+.llm-home-button {
+  width: 100%;
+  height: 52px;
+  border: none;
+  border-radius: 14px;
+  background: #833d15;
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.llm-home-button:hover {
+  background: #9b4c1f;
+  transform: translateY(-1px);
+}
+
+.llm-loading,
+.llm-error {
+  margin: auto;
+  font-size: 16px;
+  color: #4d4d4d;
+  text-align: center;
+}
+
+.llm-error {
+  color: #c02626;
+}
+
+.llm-home-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 10px 32px 26px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-bar {
+  display: block;
+  width: 205px;
+  height: 6px;
+  background: #000000;
+  border-radius: 999px;
+}
+
+@media (max-width: 480px) {
+  .llm-root {
+    padding: 24px 12px;
+  }
+
+  .llm-device {
+    transform: scale(0.7);
+  }
+}
+.llm-card.severity-high .llm-card-badge {
+  background: rgba(239, 68, 68, 0.15);
+  color: #b91c1c;
+}
+
+.llm-card.severity-medium .llm-card-badge {
+  background: rgba(250, 204, 21, 0.18);
+  color: #ca8a04;
+}
+
+.llm-card.severity-low .llm-card-badge {
+  background: rgba(249, 115, 22, 0.18);
+  color: #c2410c;
+}
+
+.llm-card.severity-info .llm-card-badge {
+  background: rgba(59, 130, 246, 0.18);
+  color: #1d4ed8;
+}
