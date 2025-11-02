@@ -9,6 +9,7 @@ from app.repositories import LlmRepository
 from app.services.ocr_service import get_ocr_service
 from app.use_cases.llm.llm_usecase import get_llm_usecase
 from app.services.room_service import get_room_service
+from app.services.stt_service import get_stt_service
 
 
 class LlmService:
@@ -47,8 +48,9 @@ class LlmService:
         llm_usecase = get_llm_usecase()
         ocr_service = get_ocr_service()
         room_service = get_room_service()
+        stt_service = get_stt_service()
 
-        stt_details: List[Dict[str, Any]] = 
+        stt_details: List[Dict[str, Any]] = await stt_service.get_transcript_triplets(room_id)
         ocr_details: List[Dict[str, Any]] = await ocr_service.list_details(user_id, room_id)
         room_checklist: List[Dict[str, Any]] = await room_service.get_room_checklist(user_id, room_id)
 
