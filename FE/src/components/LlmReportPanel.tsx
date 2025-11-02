@@ -14,6 +14,7 @@ import type { LlmErrorPayload, LlmProgressPayload } from '../realtime/stt.types'
 type LlmStatus = 'idle' | 'triggering' | 'processing' | 'done' | 'error';
 
 function normalizeLlmReport(raw: Partial<LlmReport> & {
+  room_id?: string;
   report_id?: string;
   status?: string;
   summary?: string;
@@ -21,7 +22,8 @@ function normalizeLlmReport(raw: Partial<LlmReport> & {
   recommendations?: string[];
 }): LlmReport {
   return {
-    reportId: raw.reportId ?? raw.report_id ?? '',
+    roomId: raw.roomId ?? raw.room_id ?? raw.reportId ?? raw.report_id ?? '',
+    reportId: raw.reportId ?? raw.report_id ?? undefined,
     status: (raw.status as LlmReport['status']) ?? 'done',
     summary: raw.summary ?? '',
     highlights: raw.highlights ?? [],
@@ -32,13 +34,13 @@ function normalizeLlmReport(raw: Partial<LlmReport> & {
 
 export function LlmReportPanel() {
   const client = useMemo(() => getRealtimeClient(), []);
-  const [inputReportId, setInputReportId] = useState('');
+  const [inputRoomId, setInputRoomId] = useState('');
   const [status, setStatus] = useState<LlmStatus>('idle');
   const [error, setError] = useState<string | null>(null);
   const [progressStage, setProgressStage] = useState<string | null>(null);
   const [report, setReport] = useState<LlmReport | null>(null);
-  const [activeReportId, setActiveReportId] = useState<string | null>(null);
-  const activeReportIdRef = useRef<string | null>(null);
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
+  const activeRoomIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     client.connect();
@@ -46,8 +48,8 @@ export function LlmReportPanel() {
 
   const handleSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!inputReportId.trim()) {
-      setError('reportId를 입력해주세요.');
+    if (!inputRoomId.trim()) {
+      setError('roomId를 입력해주세요.');
       return;
     }
 
@@ -57,19 +59,19 @@ export function LlmReportPanel() {
     setReport(null);
 
     try {
-      const trimmed = inputReportId.trim();
+      const trimmed = inputRoomId.trim();
       await triggerLlmReport(trimmed);
       setStatus('processing');
-      setActiveReportId(trimmed);
-      activeReportIdRef.current = trimmed;
+      setActiveRoomId(trimmed);
+      activeRoomIdRef.current = trimmed;
     } catch (triggerError) {
       setError(triggerError instanceof Error ? triggerError.message : '보고서 생성 요청 중 오류가 발생했습니다.');
       setStatus('error');
     }
-  }, [inputReportId]);
+  }, [inputRoomId]);
 
   useEffect(() => {
-    if (!activeReportId || status !== 'processing') {
+    if (!activeRoomId || status !== 'processing') {
       return undefined;
     }
 
@@ -78,7 +80,7 @@ export function LlmReportPanel() {
 
     const poll = async () => {
       try {
-        const response = await fetchLlmReport(activeReportId);
+        const response = await fetchLlmReport(activeRoomId);
         if (cancelled) {
           return;
         }
@@ -111,12 +113,22 @@ export function LlmReportPanel() {
         window.clearTimeout(timer);
       }
     };
-  }, [activeReportId, status]);
+  }, [activeRoomId, status]);
 
   useEffect(() => {
+    const extractRoomId = (value: unknown): string | null => {
+      if (!value || typeof value !== 'object') {
+        return null;
+      }
+      const record = value as Record<string, unknown>;
+      const candidate = record.roomId ?? record.room_id ?? record.report_id;
+      return typeof candidate === 'string' ? candidate : null;
+    };
+
     const unsubscribeProgress = client.subscribe('llm.progress', (payload) => {
       const progress = payload as LlmProgressPayload;
-      if (activeReportIdRef.current && progress.report_id !== activeReportIdRef.current) {
+      const payloadRoomId = extractRoomId(progress);
+      if (activeRoomIdRef.current && payloadRoomId && payloadRoomId !== activeRoomIdRef.current) {
         return;
       }
       setStatus('processing');
@@ -125,8 +137,12 @@ export function LlmReportPanel() {
 
     const unsubscribeResult = client.subscribe('llm.result', (payload) => {
       const normalized = normalizeLlmReport(payload as LlmReport);
-      activeReportIdRef.current = normalized.reportId;
-      setActiveReportId(normalized.reportId);
+      const normalizedRoomId = normalized.roomId || normalized.reportId || null;
+      if (activeRoomIdRef.current && normalizedRoomId && normalizedRoomId !== activeRoomIdRef.current) {
+        return;
+      }
+      activeRoomIdRef.current = normalizedRoomId;
+      setActiveRoomId(normalizedRoomId);
       setReport(normalized);
       setStatus('done');
       setProgressStage('완료');
@@ -134,7 +150,8 @@ export function LlmReportPanel() {
 
     const unsubscribeError = client.subscribe('llm.error', (payload) => {
       const llmError = payload as LlmErrorPayload;
-      if (activeReportIdRef.current && llmError.report_id !== activeReportIdRef.current) {
+      const payloadRoomId = extractRoomId(llmError);
+      if (activeRoomIdRef.current && payloadRoomId && payloadRoomId !== activeRoomIdRef.current) {
         return;
       }
       setError(llmError.message);
@@ -157,12 +174,12 @@ export function LlmReportPanel() {
       >
         <div className="field-row">
           <div className="field-group">
-            <label htmlFor="llm-report-id">Report ID</label>
+            <label htmlFor="llm-room-id">Room ID</label>
             <input
-              id="llm-report-id"
-              value={inputReportId}
-              onChange={(event) => setInputReportId(event.target.value)}
-              placeholder="예: rp_123"
+              id="llm-room-id"
+              value={inputRoomId}
+              onChange={(event) => setInputRoomId(event.target.value)}
+              placeholder="예: rm_123"
               disabled={status === 'triggering' || status === 'processing'}
             />
           </div>

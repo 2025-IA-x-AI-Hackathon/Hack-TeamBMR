@@ -6,7 +6,7 @@ import {
 } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import './LlmReportScreen.css';
-import { fetchLlmReport, fetchRoomLlmReport, normalizeLlmReport } from '../api/llm';
+import { fetchLlmReport, normalizeLlmReport } from '../api/llm';
 import type {
   LlmReport,
   LlmReportItem,
@@ -24,7 +24,7 @@ const severityLabel: Record<LlmReportSeverity, string> = {
 };
 
 export function LlmReportScreen() {
-  const { roomId, reportId } = useParams<{ roomId: string; reportId?: string }>();
+  const { roomId } = useParams<{ roomId: string}>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +32,7 @@ export function LlmReportScreen() {
   const [expandedItems, setExpandedItems] = useState<AccordionState>({});
 
   const loadReport = useCallback(async () => {
-    if (!roomId && !reportId) {
+    if (!roomId) {
       navigate('/home', { replace: true });
       return;
     }
@@ -40,15 +40,26 @@ export function LlmReportScreen() {
     setLoading(true);
     setError(null);
     try {
-      let data: LlmReport;
-      if (reportId) {
-        const response = await fetchLlmReport(reportId);
-        const payload = await response.json();
-        data = normalizeLlmReport(payload);
-      } else if (roomId) {
-        data = await fetchRoomLlmReport(roomId);
-      } else {
-        throw new Error('보고서를 불러올 수 없습니다.');
+      const response = await fetchLlmReport(roomId);
+      if (response.status === 202) {
+        setError('AI 리포트를 준비하는 중입니다. 잠시 후 다시 확인해 주세요.');
+        setReport(null);
+        return;
+      }
+      if (response.status === 404) {
+        setError('AI 리포트를 찾을 수 없습니다.');
+        setReport(null);
+        return;
+      }
+      if (!response.ok) {
+        throw new Error('AI 리포트를 불러오는 중 문제가 발생했습니다.');
+      }
+      const payload = await response.json();
+      const data = normalizeLlmReport(payload);
+      if (data.roomId && roomId && data.roomId !== roomId) {
+        setError('다른 방의 AI 리포트를 불러왔어요. 다시 시도해 주세요.');
+        setReport(null);
+        return;
       }
       setReport(data);
     } catch (loadError) {
@@ -57,7 +68,7 @@ export function LlmReportScreen() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, reportId, roomId]);
+  }, [navigate, roomId]);
 
   useEffect(() => {
     loadReport();

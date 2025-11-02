@@ -5,6 +5,9 @@ import { useSttSession } from '../realtime/useSttSession';
 import { getRealtimeClient } from '../realtime/ws';
 import { fetchAuthToken } from '../api/auth';
 import { api } from '../api/http';
+import type { LlmReport } from '../types/domain';
+
+type ReportState = 'idle' | 'waiting' | 'ready';
 
 export function RoomMonitoringScreen() {
   const { roomId } = useParams<{ roomId: string }>();
@@ -18,7 +21,7 @@ export function RoomMonitoringScreen() {
   } = useSttSession();
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [generating, setGenerating] = useState(false);
+  const [reportState, setReportState] = useState<ReportState>('idle');
 
   useEffect(() => {
     if (!roomId) {
@@ -58,21 +61,55 @@ export function RoomMonitoringScreen() {
     const client = getRealtimeClient();
     client.connect();
 
+    const markReportReady = () => {
+      setReportState((current) => (current === 'idle' ? current : 'ready'));
+      setToast('AI 종합 리포트가 생성되었습니다!');
+    };
+
+    const extractRoomId = (value: unknown): string | null => {
+      if (!value || typeof value !== 'object') {
+        return null;
+      }
+      const record = value as Record<string, unknown>;
+      const candidate = record.roomId ?? record.room_id;
+      return typeof candidate === 'string' ? candidate : null;
+    };
+
+    const matchesRoom = (value?: string | null) => {
+      if (!roomId || !value) {
+        return true;
+      }
+      return value === roomId;
+    };
+
     const unsubscribeOcr = client.subscribe('ocr.done', () => {
       setToast('서류 분석이 완료되었습니다! 결과를 확인해 주세요.');
     });
 
-    const unsubscribeLlm = client.subscribe('llm.done', () => {
-      setGenerating(false);
-      setToast('AI 종합 리포트가 생성되었습니다!');
+    const unsubscribeLlmDone = client.subscribe('llm.done', (payload) => {
+      const targetRoomId = extractRoomId(payload);
+      if (!matchesRoom(targetRoomId)) {
+        return;
+      }
+      markReportReady();
+    });
+
+    const unsubscribeLlmResult = client.subscribe('llm.result', (payload) => {
+      const report = payload as LlmReport | null;
+      const targetRoomId = report?.roomId ?? extractRoomId(report);
+      if (!matchesRoom(targetRoomId)) {
+        return;
+      }
+      markReportReady();
     });
 
     return () => {
       unsubscribeOcr();
-      unsubscribeLlm();
+      unsubscribeLlmDone();
+      unsubscribeLlmResult();
       stop();
     };
-  }, [stop]);
+  }, [roomId, stop]);
 
   useEffect(() => {
     if (!toast) {
@@ -95,12 +132,24 @@ export function RoomMonitoringScreen() {
     return finalized.trim();
   }, [bubbles, partial]);
 
+  const isWaitingView = reportState !== 'idle';
+  const reportMessage = reportState === 'ready'
+    ? 'AI가 모든 분석을 완료했어요!'
+    : 'AI가 대화 내용과 서류 모두를 종합적으로 분석하고 있어요';
+
+  const handleViewReport = useCallback(() => {
+    if (!roomId || reportState !== 'ready') {
+      return;
+    }
+    navigate(`/rooms/${roomId}/report`);
+  }, [navigate, reportState, roomId]);
+
   const handleGenerateReport = useCallback(async () => {
     if (!roomId) {
       return;
     }
     try {
-      setGenerating(true);
+      setReportState('waiting');
       setError(null);
       await fetchAuthToken();
       await api(`/v1/llm/reports/${encodeURIComponent(roomId)}`, { method: 'POST' });
@@ -108,7 +157,7 @@ export function RoomMonitoringScreen() {
     } catch (generateError) {
       const message = generateError instanceof Error ? generateError.message : '리포트를 생성할 수 없습니다.';
       setError(message);
-      setGenerating(false);
+      setReportState('idle');
     }
   }, [roomId]);
 
@@ -166,124 +215,153 @@ export function RoomMonitoringScreen() {
         </header>
 
         <main className="monitor-content">
-          <section>
-            <h2>방을 결정하셨나요?</h2>
-            <p>계약 전, 대화를 같이 듣고 분석해드릴게요.</p>
-            <p className="monitor-subtitle">아래 녹음 버튼을 눌러 바로 시작해보세요!</p>
-          </section>
+          {isWaitingView ? (
+            <section className="monitor-report-progress">
+              <h2>AI 종합 보고서를 만들고 있어요</h2>
+              <p className="monitor-report-message">{reportMessage}</p>
+              <img
+                className="monitor-report-image"
+                src="/boomerang.svg"
+                alt="부메랑 로고"
+                width={180}
+                height={180}
+              />
+            </section>
+          ) : (
+            <>
+              <section>
+                <h2>방을 결정하셨나요?</h2>
+                <p>계약 전, 대화를 같이 듣고 분석해드릴게요.</p>
+                <p className="monitor-subtitle">아래 녹음 버튼을 눌러 바로 시작해보세요!</p>
+              </section>
 
-          <section className="monitor-transcript">
-            {transcriptText ? (
-              <p className="transcript-text">{transcriptText}</p>
-            ) : (
-              <p className="transcript-placeholder">
-                AI가 받아 적은 대화 내용이 여기에 표시됩니다.
-              </p>
-            )}
-          </section>
+              <section className="monitor-transcript">
+                {transcriptText ? (
+                  <p className="transcript-text">{transcriptText}</p>
+                ) : (
+                  <p className="transcript-placeholder">
+                    AI가 받아 적은 대화 내용이 여기에 표시됩니다.
+                  </p>
+                )}
+              </section>
 
-          <section className="monitor-recorder">
-            {isCapturing ? (
-              <div
-                className="recorder-card"
-                onClick={handleStopRecording}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    handleStopRecording();
-                  }
-                }}
-              >
-                <div className="recorder-info">
-                  <svg
-                    className="recorder-mic"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    aria-hidden
+              <section className="monitor-recorder">
+                {isCapturing ? (
+                  <div
+                    className="recorder-card"
+                    onClick={handleStopRecording}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        handleStopRecording();
+                      }
+                    }}
                   >
-                    <path
-                      d="M10 13c1.66 0 3-1.34 3-3V5a3 3 0 1 0-6 0v5c0 1.66 1.34 3 3 3Zm4.5-3a.75.75 0 0 1 1.5 0 5.5 5.5 0 0 1-5 5.48V18a.75.75 0 0 1-1.5 0v-2.52a5.5 5.5 0 0 1-5-5.48.75.75 0 0 1 1.5 0A4 4 0 0 0 10 14a4 4 0 0 0 4.5-4Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <span className="recorder-text">
-                    {state === 'recording' ? 'AI가 대화 듣는 중...' : 'AI가 대화 준비 중...'}
-                  </span>
-                </div>
-                <div className="recorder-controls">
+                    <div className="recorder-info">
+                      <svg
+                        className="recorder-mic"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 20 20"
+                        aria-hidden
+                      >
+                        <path
+                          d="M10 13c1.66 0 3-1.34 3-3V5a3 3 0 1 0-6 0v5c0 1.66 1.34 3 3 3Zm4.5-3a.75.75 0 0 1 1.5 0 5.5 5.5 0 0 1-5 5.48V18a.75.75 0 0 1-1.5 0v-2.52a5.5 5.5 0 0 1-5-5.48.75.75 0 0 1 1.5 0A4 4 0 0 0 10 14a4 4 0 0 0 4.5-4Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                      <span className="recorder-text">
+                        {state === 'recording' ? 'AI가 대화 듣는 중...' : 'AI가 대화 준비 중...'}
+                      </span>
+                    </div>
+                    <div className="recorder-controls">
+                      <button
+                        type="button"
+                        className="pause-button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handlePauseRecording();
+                        }}
+                        title="일시 정지"
+                      >
+                        <span />
+                        <span />
+                      </button>
+                      <button
+                        type="button"
+                        className="stop-button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleStopRecording();
+                        }}
+                        title="녹음 종료"
+                      >
+                        <span />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                   <button
                     type="button"
-                    className="pause-button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handlePauseRecording();
-                    }}
-                    title="일시 정지"
+                    className="recorder-button"
+                    onClick={handleStartRecording}
                   >
-                    <span />
-                    <span />
+                    <span className="recorder-label">
+                      <svg
+                        className="recorder-mic"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 20 20"
+                        aria-hidden
+                      >
+                        <path
+                          d="M10 13c1.66 0 3-1.34 3-3V5a3 3 0 1 0-6 0v5c0 1.66 1.34 3 3 3Zm4.5-3a.75.75 0 0 1 1.5 0 5.5 5.5 0 0 1-5 5.48V18a.75.75 0 0 1-1.5 0v-2.52a5.5 5.5 0 0 1-5-5.48.75.75 0 0 1 1.5 0A4 4 0 0 0 10 14a4 4 0 0 0 4.5-4Z"
+                          fill="currentColor"
+                        />
+                      </svg>
+                      AI 녹음 대기 중
+                    </span>
+                    <span className="recorder-dot" />
                   </button>
-                  <button
-                    type="button"
-                    className="stop-button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      handleStopRecording();
-                    }}
-                    title="녹음 종료"
-                  >
-                    <span />
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="recorder-button"
-                onClick={handleStartRecording}
-              >
-                <span className="recorder-label">
-                  <svg
-                    className="recorder-mic"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    aria-hidden
-                  >
-                    <path
-                      d="M10 13c1.66 0 3-1.34 3-3V5a3 3 0 1 0-6 0v5c0 1.66 1.34 3 3 3Zm4.5-3a.75.75 0 0 1 1.5 0 5.5 5.5 0 0 1-5 5.48V18a.75.75 0 0 1-1.5 0v-2.52a5.5 5.5 0 0 1-5-5.48.75.75 0 0 1 1.5 0A4 4 0 0 0 10 14a4 4 0 0 0 4.5-4Z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  AI 녹음 대기 중
-                </span>
-                <span className="recorder-dot" />
-              </button>
-            )}
-            {error ? <div className="monitor-error">{error}</div> : null}
-          </section>
+                )}
+                {error ? <div className="monitor-error">{error}</div> : null}
+              </section>
+            </>
+          )}
         </main>
 
         <div className="monitor-actions">
-          <button
-            type="button"
-            className="upload-button"
-            onClick={handleUploadChange}
-            disabled={isCapturing}
-          >
-            서류 업로드하기
-          </button>
-          <button
-            type="button"
-            className="generate-button"
-            onClick={handleGenerateReport}
-            disabled={generating || !roomId || isCapturing}
-          >
-            {generating ? '리포트 생성 중...' : 'AI 종합 리포트 만들기'}
-          </button>
+          {isWaitingView ? (
+            <button
+              type="button"
+              className="generate-button"
+              onClick={handleViewReport}
+              disabled={reportState !== 'ready'}
+            >
+              AI 종합 리포트 확인하기
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                className="upload-button"
+                onClick={handleUploadChange}
+                disabled={isCapturing}
+              >
+                서류 업로드하기
+              </button>
+              <button
+                type="button"
+                className="generate-button"
+                onClick={handleGenerateReport}
+                disabled={!roomId || isCapturing}
+              >
+                AI 종합 리포트 만들기
+              </button>
+            </>
+          )}
         </div>
 
         {toast ? <div className="monitor-toast">{toast}</div> : null}
@@ -293,5 +371,5 @@ export function RoomMonitoringScreen() {
         </div>
       </div>
     </div>
-	  );
-	}
+  );
+}

@@ -16,7 +16,6 @@ function App() {
         <Route path="/" element={<SplashScreen />} />
         <Route path="/home" element={<MainScreen />} />
         <Route path="/rooms/:roomId" element={<RoomDetailScreen />} />
-        <Route path="/rooms/:roomId/reports/:reportId" element={<LlmReportScreen />} />
         <Route path="/rooms/:roomId/report" element={<LlmReportScreen />} />
         <Route path="/rooms/:roomId/record" element={<RoomMonitoringScreen />} />
         <Route path="/rooms/:roomId/documents" element={<DocumentUploadScreen />} />

@@ -5,7 +5,8 @@ import './RoomCreationSuccessScreen.css';
 export function RoomCreationSuccessScreen() {
   const navigate = useNavigate();
   const location = useLocation();
-  const hasRoomId = Boolean((location.state as { roomId?: string } | null | undefined)?.roomId);
+  const roomId = (location.state as { roomId?: string } | null | undefined)?.roomId ?? null;
+  const hasRoomId = Boolean(roomId);
 
   useEffect(() => {
     if (!hasRoomId) {
@@ -18,10 +19,12 @@ export function RoomCreationSuccessScreen() {
   }, [navigate]);
 
   const handleMonitor = useCallback(() => {
-    if (typeof window !== 'undefined') {
-      window.alert('계약 대화 모니터링 기능은 준비 중입니다.');
+    if (!roomId) {
+      navigate('/home', { replace: true });
+      return;
     }
-  }, []);
+    navigate(`/rooms/${roomId}/record`, { replace: true });
+  }, [navigate, roomId]);
 
   return (
     <div className="success-root">

@@ -10,6 +10,7 @@ export interface SessionInitPayload {
   diarization: boolean;
   minSpeakers: number;
   maxSpeakers: number;
+  roomId: string;
 }
 
 export interface SessionReadyPayload {
@@ -91,12 +92,16 @@ export interface OcrProgressPayload {
 }
 
 export interface LlmProgressPayload {
-  report_id: string;
+  room_id?: string;
+  roomId?: string;
+  report_id?: string;
   stage: string;
 }
 
 export interface LlmErrorPayload {
-  report_id: string;
+  room_id?: string;
+  roomId?: string;
+  report_id?: string;
   code: string;
   message: string;
 }

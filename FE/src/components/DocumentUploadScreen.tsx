@@ -85,7 +85,20 @@ export function DocumentUploadScreen() {
     const client = getRealtimeClient();
     client.connect();
 
-    const unsubscribeLlm = client.subscribe('llm.done', () => {
+    const extractRoomId = (value: unknown): string | null => {
+      if (!value || typeof value !== 'object') {
+        return null;
+      }
+      const record = value as Record<string, unknown>;
+      const candidate = record.roomId ?? record.room_id ?? record.report_id;
+      return typeof candidate === 'string' ? candidate : null;
+    };
+
+    const unsubscribeLlm = client.subscribe('llm.done', (payload) => {
+      const targetRoomId = extractRoomId(payload);
+      if (roomId && targetRoomId && targetRoomId !== roomId) {
+        return;
+      }
       setGenerating(false);
       setToast('AI 종합 리포트가 생성되었습니다!');
     });
@@ -98,7 +111,7 @@ export function DocumentUploadScreen() {
       unsubscribeLlm();
       unsubscribeOcr();
     };
-  }, []);
+  }, [roomId]);
 
   return (
     <div className="doc-root">

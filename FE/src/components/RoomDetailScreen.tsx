@@ -20,7 +20,6 @@ export function RoomDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [reportStatus, setReportStatus] = useState<LlmReportStatus>('loading');
-  const [reportId, setReportId] = useState<string | null>(null);
 
   const ensureToken = useCallback(async () => {
     if (typeof window === 'undefined') {
@@ -76,30 +75,32 @@ export function RoomDetailScreen() {
         });
         if (response.status === 404 || response.status === 202) {
           setReportStatus('pending');
-          setReportId(null);
           return;
         }
         if (!response.ok) {
           setReportStatus('error');
-          setReportId(null);
           return;
         }
-        const data = await response.json() as { status?: string; report_id?: string };
+        const data = await response.json() as { status?: string; room_id?: string; roomId?: string };
+        const targetRoomId = data.room_id ?? data.roomId ?? null;
+        if (roomId && targetRoomId && targetRoomId !== roomId) {
+          setReportStatus('pending');
+          return;
+        }
         if (data.status === 'done') {
           setReportStatus('done');
-          setReportId(data.report_id ?? room.reportId ?? null);
+        } else if (data.status === 'failed') {
+          setReportStatus('error');
         } else {
           setReportStatus('pending');
-          setReportId(null);
         }
       } catch (loadError) {
         console.error(loadError);
         setReportStatus('error');
-        setReportId(null);
       }
     };
     loadReportStatus();
-  }, [ensureToken, room?.reportId, roomId]);
+  }, [ensureToken, roomId]);
 
   const checklistGroups = useMemo(() => {
     const map = new Map<string, string[]>();
@@ -148,8 +149,8 @@ export function RoomDetailScreen() {
   const depositRent = `${room.deposit.toLocaleString('ko-KR')}/${room.rentMonthly.toLocaleString('ko-KR')}`;
   const meta = `${room.type || '주거 형태 미지정'}, ${room.floor}층, ${room.feeIncluded ? '관리비 포함' : room.feeMgmt ? `관리비 ${room.feeMgmt.toLocaleString('ko-KR')}만` : '관리비 없음'}`;
 
-  const primaryHref = reportStatus === 'done' && reportId
-    ? `/rooms/${room.roomId}/reports/${reportId}`
+  const primaryHref = reportStatus === 'done'
+    ? `/rooms/${room.roomId}/report`
     : `/rooms/${room.roomId}/record`;
 
   const primaryLabel = reportStatus === 'done' ? 'AI 종합 리포트 보러가기' : '계약 대화 모니터링';

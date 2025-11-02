@@ -51,7 +51,6 @@ export interface Room {
   createdAt: string;
   photos: RoomPhoto[];
   checklist?: RoomChecklist;
-  reportId?: string | null;
 }
 
 export interface CreateRoomPayload {
@@ -93,8 +92,8 @@ export interface OcrReport {
 export type LlmStage = 'queued' | 'processing' | 'done' | 'failed';
 
 export interface LlmReport {
-  reportId: string;
-  roomId?: string;
+  roomId: string;
+  reportId?: string;
   userId?: string;
   status: LlmStage;
   summary?: string;

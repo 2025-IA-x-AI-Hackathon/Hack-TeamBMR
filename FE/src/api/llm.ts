@@ -28,8 +28,8 @@ function normalizeGlossaryItem(raw: any): LlmReportGlossaryItem {
 
 export function normalizeLlmReport(raw: any): LlmReport {
   return {
-    reportId: raw?.reportId ?? raw?.report_id ?? '',
-    roomId: raw?.roomId ?? raw?.room_id ?? undefined,
+    roomId: raw?.roomId ?? raw?.room_id ?? raw?.reportId ?? raw?.report_id ?? '',
+    reportId: raw?.reportId ?? raw?.report_id ?? undefined,
     userId: raw?.userId ?? raw?.user_id ?? undefined,
     status: raw?.status ?? 'done',
     summary: raw?.summary ?? undefined,
@@ -42,18 +42,12 @@ export function normalizeLlmReport(raw: any): LlmReport {
   };
 }
 
-export async function triggerLlmReport(reportId: string): Promise<void> {
-  await api(`/v1/llm/reports/${encodeURIComponent(reportId)}`, {
+export async function triggerLlmReport(roomId: string): Promise<void> {
+  await api(`/v1/llm/reports/${encodeURIComponent(roomId)}`, {
     method: 'POST',
   });
 }
 
-export function fetchLlmReport(reportId: string): Promise<Response> {
-  return api(`/v1/llm/reports/${encodeURIComponent(reportId)}`);
-}
-
-export async function fetchRoomLlmReport(roomId: string): Promise<LlmReport> {
-  const response = await api(`/v1/llm/reports/${encodeURIComponent(roomId)}`);
-  const data = await response.json();
-  return normalizeLlmReport(data);
+export function fetchLlmReport(roomId: string): Promise<Response> {
+  return api(`/v1/llm/reports/${encodeURIComponent(roomId)}`);
 }

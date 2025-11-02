@@ -57,7 +57,6 @@ function normalizeRoom(raw: RawRoom): Room {
     rentMonthly: raw.rent_monthly ?? 0,
     feeIncluded: raw.fee_included ?? false,
     feeMgmt: raw.fee_mgmt ?? undefined,
-    reportId: raw.report_id ?? null,
     createdAt: raw.created_at ?? new Date().toISOString(),
     photos: normalizePhoto(raw.photo),
     checklist: raw.checklist,
