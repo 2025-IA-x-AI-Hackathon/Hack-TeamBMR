@@ -199,13 +199,22 @@ npm run dev
 <table>
 <tr>
 <td align="center">
+<a href="https://github.com/Rillmo">
+<img src="https://github.com/Rillmo.png" width="80px;" alt="Rillmo"/>
+<br />
+<sub><b>Rillmo</b></sub>
+</a>
+<br />
+PM
+</td>
+<td align="center">
 <a href="https://github.com/sanglee2">
 <img src="https://github.com/sanglee2.png" width="80px;" alt="sanglee2"/>
 <br />
 <sub><b>sanglee2</b></sub>
 </a>
 <br />
-시스템 아키텍처 및 백엔드 개발
+LLM 기능 개발
 </td>
 <td align="center">
 <a href="https://github.com/lm9204">
@@ -214,7 +223,7 @@ npm run dev
 <sub><b>lm9204</b></sub>
 </a>
 <br />
-AI/ML 모델 통합 및 데이터 파이프라인
+프론트엔드 및 STT 기능 개발
 </td>
 <td align="center">
 <a href="https://github.com/minjacho42">
@@ -223,16 +232,7 @@ AI/ML 모델 통합 및 데이터 파이프라인
 <sub><b>minjacho42</b></sub>
 </a>
 <br />
-프론트엔드 개발 및 UI/UX 설계
-</td>
-<td align="center">
-<a href="https://github.com/Rillmo">
-<img src="https://github.com/Rillmo.png" width="80px;" alt="Rillmo"/>
-<br />
-<sub><b>Rillmo</b></sub>
-</a>
-<br />
-STT/OCR 서비스 개발 및 최적화
+백엔드 개발 및 인프라 운영
 </td>
 <td align="center">
 <a href="https://github.com/yjy323">
@@ -241,7 +241,7 @@ STT/OCR 서비스 개발 및 최적화
 <sub><b>yjy323</b></sub>
 </a>
 <br />
-제품 기획 및 사용자 경험 설계
+OCR 기능 개발
 </td>
 </tr>
 </table>
